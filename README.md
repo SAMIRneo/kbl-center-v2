@@ -30,6 +30,7 @@
 ###  Features Principales
 
 - 🌳 **Visualisation 3D Interactive** - Arbre Sephirot en Three.js avec contrôles orbitaux
+- 📜 **Whitepaper Mystique** - Documentation complète de la philosophie et architecture
 - 🧠 **Intelligence Artificielle** - Modèles ML locaux (Qwen, CryptoMamba, XGBoost)
 - 📊 **Terminal de Trading** - Données marché en temps réel (Binance API)
 - 🏛️ **Gouvernance Décentralisée** - Système de vote et trésorerie DAO
@@ -46,14 +47,16 @@ graph TD
     A[User] -->|Interaction| B[Next.js App Router]
     B --> C[System Store - Zustand]
     
-    subgraph "Core Modules"
-        D[Terminal Trading]
-        E[IA Neural Networks]
-        F[Audiovisuel]
-        G[Communautes]
-        H[Politique]
+    subgraph "Core Modules - Sephiroth"
+        D0[HOME - Kether]
+        D[Terminal - Chokmah]
+        E[IA - Binah]
+        F[Audiovisuel - Chesed]
+        G[Communautes - Geburah]
+        H[Politique - Tiphereth]
     end
     
+    C -->|State Management| D0
     C -->|State Management| D
     C -->|State Management| E
     C -->|State Management| F
@@ -131,11 +134,12 @@ kbl-center-v2/
 │
 ├── app/                          # Next.js App Router
 │   ├── (devices)/               # Routes groupées (Sephirot modules)
-│   │   ├── terminal/           # Module Trading
-│   │   ├── ia/                 # Module IA
-│   │   ├── audiovisuel/        # Module Média
-│   │   ├── communautes/        # Module Social
-│   │   └── politique/          # Module Gouvernance
+│   │   ├── home/               # Module Whitepaper (Kether)
+│   │   ├── terminal/           # Module Trading (Chokmah)
+│   │   ├── ia/                 # Module IA (Binah)
+│   │   ├── audiovisuel/        # Module Média (Chesed)
+│   │   ├── communautes/        # Module Social (Geburah)
+│   │   └── politique/          # Module Gouvernance (Tiphereth)
 │   ├── layout.tsx              # Layout racine
 │   ├── page.tsx                # Page d'accueil
 │   └── globals.css             # Styles globaux
@@ -168,16 +172,27 @@ kbl-center-v2/
 
 ## 🔮 Modules
 
-### 1. Terminal de Trading
+### 0. HOME - Whitepaper Sephirotique (Kether)
+**Route**: `/home`
+
+- Documentation complète de la vision et philosophie
+- Architecture mystique de l'Arbre de Vie
+- Visualisation 3D de géométrie sacrée (Tree of Life Core)
+- 8 sections navigables : Introduction, Vision, Architecture, Technologies, Modules, Philosophie, Roadmap, Conclusion
+- Navigation interactive avec sidebar et progression
+- Effets visuels avancés (particules, sacred geometry, floating shapes)
+
+### 1. Terminal de Trading (Chokmah)
 **Route**: `/terminal`
 
 - Prix BTC/USDT en temps réel (Binance API)
 - Graphiques chandelier 5m
 - Order Book depth visualization
 - Métriques 24h (volume, variation, high/low)
+- Terminal de commandes interactif
 - WebSocket connections (coming soon)
 
-### 2. Intelligence Artificielle
+### 2. Intelligence Artificielle (Binah)
 **Route**: `/ia`
 
 - Visualisation réseau de neurones (Canvas)
@@ -186,7 +201,7 @@ kbl-center-v2/
 - Backtesting & performance analytics
 - GPU/VRAM monitoring
 
-### 3. Centre Audiovisuel
+### 3. Centre Audiovisuel (Chesed)
 **Route**: `/audiovisuel`
 
 - Visualiseur de fréquences audio (Waveform)
@@ -195,7 +210,7 @@ kbl-center-v2/
 - Pipeline de production (Recording → Editing → Published)
 - Stats de vues et engagement
 
-### 4. Hub Communautaire
+### 4. Hub Communautaire (Geburah)
 **Route**: `/communautes`
 
 - Analytics d'engagement (posts, comments, likes)
@@ -204,7 +219,7 @@ kbl-center-v2/
 - Flux d'activité temps réel
 - Statistiques de croissance
 
-### 5. Gouvernance Politique
+### 5. Gouvernance Politique (Tiphereth)
 **Route**: `/politique`
 
 - Système de propositions & votes
