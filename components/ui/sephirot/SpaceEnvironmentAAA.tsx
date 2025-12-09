@@ -3,7 +3,7 @@
 
 import React, { useRef, useMemo } from 'react'
 import { useFrame, extend } from '@react-three/fiber'
-import { shaderMaterial, useTexture } from '@react-three/drei'
+import { shaderMaterial } from '@react-three/drei'
 import * as THREE from 'three'
 
 // ============================================================================
@@ -49,14 +49,12 @@ const VolumetricNebulaMaterial = shaderMaterial(
     varying vec2 vUv;
     varying vec3 vWorldPosition;
     
-    // Hash pour noise procédural optimisé
     float hash(vec3 p) {
       p = fract(p * 0.3183099 + 0.1);
       p *= 17.0;
       return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
     }
     
-    // Noise 3D fractal (FBM)
     float noise(vec3 x) {
       vec3 i = floor(x);
       vec3 f = fract(x);
@@ -71,7 +69,6 @@ const VolumetricNebulaMaterial = shaderMaterial(
       );
     }
     
-    // FBM (Fractional Brownian Motion) 4 octaves
     float fbm(vec3 p) {
       float value = 0.0;
       float amplitude = 0.5;
@@ -85,7 +82,6 @@ const VolumetricNebulaMaterial = shaderMaterial(
       return value;
     }
     
-    // Domain warping pour effet organique
     vec3 domainWarp(vec3 p, float t) {
       vec3 q = vec3(
         fbm(p + vec3(0.0, 0.0, t * 0.05)),
@@ -104,12 +100,9 @@ const VolumetricNebulaMaterial = shaderMaterial(
     
     void main() {
       vec2 uv = vUv;
-      
-      // Ray direction
       vec3 rayDir = normalize(vWorldPosition - cameraPos);
       vec3 rayOrigin = vWorldPosition;
       
-      // Raymarching parameters
       float maxDist = 80.0;
       float stepSize = 0.8;
       int steps = 64;
@@ -120,10 +113,8 @@ const VolumetricNebulaMaterial = shaderMaterial(
       for(int i = 0; i < steps; i++) {
         if(accumColor.a >= 0.99) break;
         
-        // Domain warped position
         vec3 warpedPos = domainWarp(pos * 0.02, time);
         
-        // Density sampling avec rotation spirale
         float angle = length(pos.xy) * 0.05 + time * 0.02;
         vec3 rotatedPos = vec3(
           cos(angle) * warpedPos.x - sin(angle) * warpedPos.y,
@@ -134,7 +125,6 @@ const VolumetricNebulaMaterial = shaderMaterial(
         float densitySample = fbm(rotatedPos * 2.0 + time * 0.03);
         densitySample = smoothstep(0.3, 0.8, densitySample);
         
-        // Color blending basé sur la densité et position
         float colorMix1 = fbm(rotatedPos * 3.0 + time * 0.05);
         float colorMix2 = fbm(rotatedPos * 1.5 - time * 0.04);
         
@@ -142,11 +132,9 @@ const VolumetricNebulaMaterial = shaderMaterial(
         nebulaColor = mix(nebulaColor, color3, colorMix2 * 0.5);
         nebulaColor = mix(nebulaColor, color4, pow(densitySample, 2.0) * 0.3);
         
-        // Luminance additionnelle dans zones denses
         float glow = pow(densitySample, 3.0) * 2.0;
         nebulaColor += vec3(glow) * brightness;
         
-        // Accumulation volumétrique
         float alpha = densitySample * density * stepSize;
         accumColor.rgb += nebulaColor * alpha * (1.0 - accumColor.a);
         accumColor.a += alpha * (1.0 - accumColor.a);
@@ -154,7 +142,6 @@ const VolumetricNebulaMaterial = shaderMaterial(
         pos += rayDir * stepSize;
       }
       
-      // Vignette subtile
       float vignette = 1.0 - length(uv - 0.5) * 0.4;
       accumColor.rgb *= vignette;
       
@@ -166,12 +153,12 @@ const VolumetricNebulaMaterial = shaderMaterial(
 extend({ VolumetricNebulaMaterial })
 
 // ============================================================================
-// HDR STARFIELD AVEC GPU INSTANCING
+// HDR STARFIELD AVEC GPU INSTANCING (FIXED)
 // ============================================================================
 
 export const HDRStarfield = React.memo(() => {
   const meshRef = useRef<THREE.InstancedMesh>(null!)
-  const count = 25000 // Ultra haute densité
+  const count = 25000
   
   const { positions, colors, scales, twinkles } = useMemo(() => {
     const pos = []
@@ -179,18 +166,16 @@ export const HDRStarfield = React.memo(() => {
     const scls = []
     const twinks = []
     
-    // Palette stellaire réaliste
     const starTypes = [
-      { color: new THREE.Color('#ffffff'), weight: 0.4 }, // Blanc (type A)
-      { color: new THREE.Color('#fff4e6'), weight: 0.25 }, // Jaune (type G - Soleil)
-      { color: new THREE.Color('#ffebe6'), weight: 0.15 }, // Orange (type K)
-      { color: new THREE.Color('#ffe6e6'), weight: 0.1 }, // Rouge (type M)
-      { color: new THREE.Color('#e6f4ff'), weight: 0.07 }, // Bleu clair (type B)
-      { color: new THREE.Color('#d6e8ff'), weight: 0.03 }, // Bleu (type O)
+      { color: new THREE.Color('#ffffff'), weight: 0.4 },
+      { color: new THREE.Color('#fff4e6'), weight: 0.25 },
+      { color: new THREE.Color('#ffebe6'), weight: 0.15 },
+      { color: new THREE.Color('#ffe6e6'), weight: 0.1 },
+      { color: new THREE.Color('#e6f4ff'), weight: 0.07 },
+      { color: new THREE.Color('#d6e8ff'), weight: 0.03 },
     ]
     
     for (let i = 0; i < count; i++) {
-      // Distribution sphérique uniforme
       const theta = Math.random() * Math.PI * 2
       const phi = Math.acos(2 * Math.random() - 1)
       const radius = 150 + Math.random() * 350
@@ -201,7 +186,6 @@ export const HDRStarfield = React.memo(() => {
         radius * Math.cos(phi)
       )
       
-      // Sélection couleur pondérée
       let random = Math.random()
       let selectedColor = starTypes[0].color
       for (const type of starTypes) {
@@ -212,7 +196,6 @@ export const HDRStarfield = React.memo(() => {
         random -= type.weight
       }
       
-      // Variation de luminosité
       const brightness = 0.7 + Math.random() * 0.3
       cols.push(
         selectedColor.r * brightness,
@@ -220,11 +203,8 @@ export const HDRStarfield = React.memo(() => {
         selectedColor.b * brightness
       )
       
-      // Taille variable (magnitude)
-      const magnitude = Math.pow(Math.random(), 2) // Distribution réaliste
+      const magnitude = Math.pow(Math.random(), 2)
       scls.push(0.15 + magnitude * 0.6)
-      
-      // Fréquence de scintillement
       twinks.push(0.5 + Math.random() * 2.0)
     }
     
@@ -236,7 +216,6 @@ export const HDRStarfield = React.memo(() => {
     }
   }, [])
   
-  // Setup instances
   React.useEffect(() => {
     if (!meshRef.current) return
     
@@ -252,19 +231,21 @@ export const HDRStarfield = React.memo(() => {
     
     meshRef.current.instanceMatrix.needsUpdate = true
     
-    // Attributs custom
+    // FIX: Attributs custom correctement initialisés
     geometry.setAttribute('instanceColor', new THREE.InstancedBufferAttribute(colors, 3))
     geometry.setAttribute('instanceTwinkle', new THREE.InstancedBufferAttribute(twinkles, 1))
-  }, [positions, colors, scales, twinkles])
+  }, [positions, colors, scales, twinkles, count])
   
-  // Animation de scintillement
   useFrame((state) => {
     if (!meshRef.current) return
     
     const geometry = meshRef.current.geometry
-    const twinkleAttr = geometry.getAttribute('instanceTwinkle') as THREE.InstancedBufferAttribute
+    const twinkleAttr = geometry.getAttribute('instanceTwinkle')
     
-    for (let i = 0; i < count; i += 50) { // Optimisation: update 1/50
+    // FIX: Vérification que l'attribut existe avant utilisation
+    if (!twinkleAttr || !twinkleAttr.array) return
+    
+    for (let i = 0; i < count; i += 50) {
       const twinkleSpeed = twinkleAttr.array[i]
       const twinkle = Math.sin(state.clock.elapsedTime * twinkleSpeed + i) * 0.5 + 0.5
       
@@ -297,13 +278,12 @@ export const HDRStarfield = React.memo(() => {
 })
 
 // ============================================================================
-// ANNEAUX PLANÉTAIRES ANIMÉS (PHYSIQUE RÉALISTE)
+// ANNEAUX PLANÉTAIRES ANIMÉS
 // ============================================================================
 
 export const AnimatedPlanetaryRings = React.memo(({ position = [0, 0, 0], scale = 1 }: any) => {
   const ringsGroup = useRef<THREE.Group>(null!)
   
-  // Configuration des anneaux (style Saturne)
   const ringConfigs = useMemo(() => [
     { 
       innerRadius: 22 * scale, 
@@ -342,20 +322,19 @@ export const AnimatedPlanetaryRings = React.memo(({ position = [0, 0, 0], scale 
     
     ringsGroup.current.rotation.y += 0.0012
     
-    // Animation individuelle des anneaux (rotation différentielle)
     ringsGroup.current.children.forEach((child, i) => {
       const config = ringConfigs[i]
       if (!config) return
       
       child.rotation.z += config.speed
       
-      // Ondulation subtile (Lindblad resonance simulation)
       const wave = Math.sin(state.clock.elapsedTime * 0.3 + i * 0.5) * 0.03
       child.scale.setScalar(1 + wave)
       
-      // Pulsation d'intensité
       const material = (child as THREE.Mesh).material as THREE.MeshStandardMaterial
-      material.emissiveIntensity = 1.0 + Math.sin(state.clock.elapsedTime * 0.5 + i) * 0.3
+      if (material && material.emissiveIntensity !== undefined) {
+        material.emissiveIntensity = 1.0 + Math.sin(state.clock.elapsedTime * 0.5 + i) * 0.3
+      }
     })
   })
   
@@ -386,7 +365,6 @@ export const AnimatedPlanetaryRings = React.memo(({ position = [0, 0, 0], scale 
         </mesh>
       ))}
       
-      {/* Particules orbitales (débris) */}
       {ringConfigs.map((config, ringIndex) => (
         <RingParticles key={`particles-${ringIndex}`} config={config} ringIndex={ringIndex} />
       ))}
@@ -394,7 +372,6 @@ export const AnimatedPlanetaryRings = React.memo(({ position = [0, 0, 0], scale 
   )
 })
 
-// Particules orbitales pour chaque anneau
 const RingParticles = React.memo(({ config, ringIndex }: any) => {
   const particlesRef = useRef<THREE.Points>(null!)
   
@@ -486,7 +463,7 @@ export const VolumetricNebula = React.memo(() => {
 })
 
 // ============================================================================
-// DUST CLOUDS (NUAGES DE POUSSIÈRE COSMIQUE)
+// DUST CLOUDS
 // ============================================================================
 
 export const CosmicDustClouds = React.memo(() => {
@@ -505,7 +482,6 @@ export const CosmicDustClouds = React.memo(() => {
     ]
     
     for (let i = 0; i < count; i++) {
-      // Distribution en clusters
       const clusterX = (Math.random() - 0.5) * 300
       const clusterY = (Math.random() - 0.5) * 100
       const clusterZ = (Math.random() - 0.5) * 300
@@ -562,19 +538,10 @@ export const CosmicDustClouds = React.memo(() => {
 export const SpaceEnvironmentAAA = React.memo(() => {
   return (
     <>
-      {/* Background volumétrique */}
       <VolumetricNebula />
-      
-      {/* Starfield HDR haute densité */}
       <HDRStarfield />
-      
-      {/* Nuages de poussière cosmique */}
       <CosmicDustClouds />
-      
-      {/* Anneaux planétaires animés */}
       <AnimatedPlanetaryRings position={[0, 0, 0]} scale={1} />
-      
-      {/* Fog volumétrique profond */}
       <fog attach="fog" args={['#000510', 50, 400]} />
     </>
   )
