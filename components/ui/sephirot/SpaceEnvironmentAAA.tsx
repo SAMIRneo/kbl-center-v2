@@ -3,7 +3,7 @@
 
 import React, { useRef, useMemo } from 'react'
 import { useFrame, extend } from '@react-three/fiber'
-import { shaderMaterial } from '@react-three/drei'
+import { shaderMaterial, Sphere } from '@react-three/drei'
 import * as THREE from 'three'
 
 // ============================================================================
@@ -132,7 +132,7 @@ const VolumetricNebulaMaterial = shaderMaterial(
 extend({ VolumetricNebulaMaterial })
 
 // ============================================================================
-// SHADER ANNEAUX HOLOGRAPHIQUES ULTRA-FINS
+// SHADER ANNEAUX HOLOGRAPHIQUES
 // ============================================================================
 
 const HolographicRingMaterial = shaderMaterial(
@@ -174,24 +174,17 @@ const HolographicRingMaterial = shaderMaterial(
       float angle = atan(vPosition.z, vPosition.x);
       float radius = length(vPosition.xz);
       
-      // Scanlines holographiques
       float scanline = sin((angle + time * speed) * 30.0) * 0.5 + 0.5;
       scanline = pow(scanline, 3.0);
       
-      // Noise procédural
       float n = noise(vUv * 50.0 + time * 0.5);
       
-      // Fresnel effect
       vec3 viewDir = normalize(cameraPosition - vPosition);
       float fresnel = pow(1.0 - abs(dot(viewDir, vNormal)), 2.0);
       
-      // Data streams (flux de données)
       float dataStream = step(0.95, fract((angle + time * speed * 2.0) * 15.0 + n));
-      
-      // Circuit patterns
       float circuit = step(0.98, sin((vUv.x + time * 0.3) * 80.0)) * step(0.97, cos((vUv.y - time * 0.2) * 60.0));
       
-      // Couleur finale
       vec3 finalColor = color;
       finalColor += vec3(scanline) * 0.5;
       finalColor += vec3(dataStream) * color * 2.0;
@@ -333,11 +326,13 @@ export const HDRStarfield = React.memo(() => {
 })
 
 // ============================================================================
-// ANNEAUX HOLOGRAPHIQUES ULTRA-FINS
+// ANNEAUX HOLOGRAPHIQUES DÉSYNCHRONISÉS
 // ============================================================================
 
 export const HolographicRings = React.memo(({ position = [0, 0, 0], scale = 1 }: any) => {
-  const ringsGroup = useRef<THREE.Group>(null!)
+  const ring1Ref = useRef<THREE.Group>(null!)
+  const ring2Ref = useRef<THREE.Group>(null!)
+  const ring3Ref = useRef<THREE.Group>(null!)
   
   const ringConfigs = useMemo(() => [
     { 
@@ -346,7 +341,10 @@ export const HolographicRings = React.memo(({ position = [0, 0, 0], scale = 1 }:
       color: '#00ffff', 
       speed: 0.8,
       opacity: 0.65,
-      segments: 256
+      segments: 256,
+      rotationSpeed: 0.003,
+      tiltX: 0.2,
+      tiltZ: 0.1
     },
     { 
       radius: 28 * scale, 
@@ -354,7 +352,10 @@ export const HolographicRings = React.memo(({ position = [0, 0, 0], scale = 1 }:
       color: '#ff00ff', 
       speed: 0.6,
       opacity: 0.55,
-      segments: 256
+      segments: 256,
+      rotationSpeed: -0.002,
+      tiltX: -0.15,
+      tiltZ: 0.3
     },
     { 
       radius: 34 * scale, 
@@ -362,56 +363,435 @@ export const HolographicRings = React.memo(({ position = [0, 0, 0], scale = 1 }:
       color: '#ffff00', 
       speed: 0.4,
       opacity: 0.45,
-      segments: 256
+      segments: 256,
+      rotationSpeed: 0.0015,
+      tiltX: 0.25,
+      tiltZ: -0.2
     },
   ], [scale])
   
   useFrame((state) => {
-    if (!ringsGroup.current) return
+    const refs = [ring1Ref, ring2Ref, ring3Ref]
     
-    ringsGroup.current.rotation.y += 0.0015
-    
-    ringsGroup.current.children.forEach((child, i) => {
+    refs.forEach((ref, i) => {
+      if (!ref.current) return
+      
       const config = ringConfigs[i]
-      if (!config || !child.children[0]) return
       
-      child.rotation.z += config.speed * 0.001
+      // Rotation désynchronisée autour de Y (orbite)
+      ref.current.rotation.y += config.rotationSpeed
       
+      // Rotation propre du mesh (texture holographique)
+      if (ref.current.children[0]) {
+        ref.current.children[0].rotation.z += config.speed * 0.001
+      }
+      
+      // Oscillation subtile
       const wave = Math.sin(state.clock.elapsedTime * 0.3 + i * 0.5) * 0.02
-      child.scale.setScalar(1 + wave)
+      ref.current.scale.setScalar(1 + wave)
       
-      const material = (child.children[0] as THREE.Mesh).material as any
-      if (material.uniforms) {
+      // Update shader uniforms
+      const material = (ref.current.children[0] as THREE.Mesh)?.material as any
+      if (material?.uniforms) {
         material.uniforms.time.value = state.clock.elapsedTime
       }
     })
   })
   
   return (
-    <group ref={ringsGroup} position={position}>
-      {ringConfigs.map((config, i) => (
-        <group key={i} rotation={[Math.PI / 2, 0, i * Math.PI / 8]}>
-          <mesh>
-            <torusGeometry args={[config.radius, config.thickness, 8, config.segments]} />
-            <holographicRingMaterial
-              transparent
-              side={THREE.DoubleSide}
-              depthWrite={false}
-              blending={THREE.AdditiveBlending}
-              color={config.color}
-              opacity={config.opacity}
-              thickness={1.0}
-              speed={config.speed}
-            />
-          </mesh>
-        </group>
-      ))}
+    <group position={position}>
+      {/* Anneau 1 - Cyan */}
+      <group 
+        ref={ring1Ref} 
+        rotation={[Math.PI / 2 + ringConfigs[0].tiltX, 0, ringConfigs[0].tiltZ]}
+      >
+        <mesh>
+          <torusGeometry args={[ringConfigs[0].radius, ringConfigs[0].thickness, 8, ringConfigs[0].segments]} />
+          <holographicRingMaterial
+            transparent
+            side={THREE.DoubleSide}
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+            color={ringConfigs[0].color}
+            opacity={ringConfigs[0].opacity}
+            thickness={1.0}
+            speed={ringConfigs[0].speed}
+          />
+        </mesh>
+      </group>
+      
+      {/* Anneau 2 - Magenta */}
+      <group 
+        ref={ring2Ref} 
+        rotation={[Math.PI / 2 + ringConfigs[1].tiltX, 0, ringConfigs[1].tiltZ]}
+      >
+        <mesh>
+          <torusGeometry args={[ringConfigs[1].radius, ringConfigs[1].thickness, 8, ringConfigs[1].segments]} />
+          <holographicRingMaterial
+            transparent
+            side={THREE.DoubleSide}
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+            color={ringConfigs[1].color}
+            opacity={ringConfigs[1].opacity}
+            thickness={1.0}
+            speed={ringConfigs[1].speed}
+          />
+        </mesh>
+      </group>
+      
+      {/* Anneau 3 - Jaune */}
+      <group 
+        ref={ring3Ref} 
+        rotation={[Math.PI / 2 + ringConfigs[2].tiltX, 0, ringConfigs[2].tiltZ]}
+      >
+        <mesh>
+          <torusGeometry args={[ringConfigs[2].radius, ringConfigs[2].thickness, 8, ringConfigs[2].segments]} />
+          <holographicRingMaterial
+            transparent
+            side={THREE.DoubleSide}
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+            color={ringConfigs[2].color}
+            opacity={ringConfigs[2].opacity}
+            thickness={1.0}
+            speed={ringConfigs[2].speed}
+          />
+        </mesh>
+      </group>
     </group>
   )
 })
 
 // ============================================================================
-// ASTÉROÏDES DISTANTS
+// TROU NOIR DIVIN
+// ============================================================================
+
+export const DivineBlackHole = React.memo(() => {
+  const diskRef = useRef<THREE.Mesh>(null!)
+  const lensRef = useRef<THREE.Mesh>(null!)
+  const jetRef = useRef<THREE.Points>(null!)
+  
+  // Particules du disque d'accrétion
+  const diskParticles = useMemo(() => {
+    const count = 2000
+    const positions = []
+    const colors = []
+    const sizes = []
+    
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2
+      const radius = 6 + Math.random() * 8
+      const height = (Math.random() - 0.5) * 0.5
+      
+      positions.push(
+        Math.cos(angle) * radius,
+        height,
+        Math.sin(angle) * radius
+      )
+      
+      const temp = radius / 14
+      colors.push(
+        1.0,
+        0.3 + temp * 0.7,
+        temp * 0.5
+      )
+      
+      sizes.push(0.2 + Math.random() * 0.4)
+    }
+    
+    return {
+      positions: new Float32Array(positions),
+      colors: new Float32Array(colors),
+      sizes: new Float32Array(sizes),
+      count
+    }
+  }, [])
+  
+  useFrame((state) => {
+    const t = state.clock.elapsedTime
+    
+    // Rotation du disque d'accrétion
+    if (diskRef.current) {
+      diskRef.current.rotation.y += 0.015
+    }
+    
+    // Pulsation de la lentille gravitationnelle
+    if (lensRef.current) {
+      const pulse = 1 + Math.sin(t * 0.8) * 0.08
+      lensRef.current.scale.setScalar(pulse)
+    }
+  })
+  
+  return (
+    <group position={[-65, -30, -90]}>
+      {/* Singularité noire */}
+      <Sphere args={[3.5, 64, 64]}>
+        <meshStandardMaterial
+          color="#000000"
+          metalness={1}
+          roughness={0}
+          emissive="#000000"
+        />
+      </Sphere>
+      
+      {/* Lentille gravitationnelle */}
+      <Sphere ref={lensRef} args={[5.5, 64, 64]}>
+        <meshStandardMaterial
+          color="#1a0a3a"
+          emissive="#3730a3"
+          emissiveIntensity={0.5}
+          transparent
+          opacity={0.12}
+          side={THREE.BackSide}
+          roughness={0}
+        />
+      </Sphere>
+      
+      {/* Disque d'accrétion (particules) */}
+      <points ref={diskRef} rotation={[Math.PI / 2.2, 0, 0]}>
+        <bufferGeometry>
+          <bufferAttribute 
+            attach="attributes-position" 
+            count={diskParticles.count} 
+            array={diskParticles.positions} 
+            itemSize={3} 
+          />
+          <bufferAttribute 
+            attach="attributes-color" 
+            count={diskParticles.count} 
+            array={diskParticles.colors} 
+            itemSize={3} 
+          />
+          <bufferAttribute 
+            attach="attributes-size" 
+            count={diskParticles.count} 
+            array={diskParticles.sizes} 
+            itemSize={1} 
+          />
+        </bufferGeometry>
+        <pointsMaterial
+          size={0.3}
+          vertexColors
+          transparent
+          opacity={0.85}
+          blending={THREE.AdditiveBlending}
+          sizeAttenuation
+          depthWrite={false}
+        />
+      </points>
+      
+      {/* Anneau principal du disque */}
+      <mesh rotation={[Math.PI / 2.2, 0, 0]}>
+        <torusGeometry args={[10, 0.8, 16, 128]} />
+        <meshStandardMaterial
+          color="#ff4500"
+          emissive="#ff6b35"
+          emissiveIntensity={1.8}
+          transparent
+          opacity={0.4}
+          roughness={0.2}
+          metalness={0.8}
+          side={THREE.DoubleSide}
+          blending={THREE.AdditiveBlending}
+        />
+      </mesh>
+    </group>
+  )
+})
+
+// ============================================================================
+// SUPERNOVA EXPLOSIVE
+// ============================================================================
+
+export const ExplodingSupernova = React.memo(() => {
+  const coreRef = useRef<THREE.Mesh>(null!)
+  const layer1Ref = useRef<THREE.Mesh>(null!)
+  const layer2Ref = useRef<THREE.Mesh>(null!)
+  const layer3Ref = useRef<THREE.Mesh>(null!)
+  const debrisRef = useRef<THREE.Points>(null!)
+  
+  const debris = useMemo(() => {
+    const count = 1500
+    const positions = []
+    const colors = []
+    const sizes = []
+    const velocities = []
+    
+    for (let i = 0; i < count; i++) {
+      const theta = Math.random() * Math.PI * 2
+      const phi = Math.acos(2 * Math.random() - 1)
+      const speed = 0.5 + Math.random() * 1.5
+      
+      positions.push(0, 0, 0)
+      
+      velocities.push(
+        Math.sin(phi) * Math.cos(theta) * speed,
+        Math.sin(phi) * Math.sin(theta) * speed,
+        Math.cos(phi) * speed
+      )
+      
+      const temp = Math.random()
+      if (temp > 0.7) {
+        colors.push(1.0, 1.0, 0.9) // Blanc chaud
+      } else if (temp > 0.4) {
+        colors.push(1.0, 0.5, 0.1) // Orange
+      } else {
+        colors.push(1.0, 0.2, 0.0) // Rouge
+      }
+      
+      sizes.push(0.3 + Math.random() * 0.8)
+    }
+    
+    return {
+      positions: new Float32Array(positions),
+      colors: new Float32Array(colors),
+      sizes: new Float32Array(sizes),
+      velocities,
+      count
+    }
+  }, [])
+  
+  useFrame((state) => {
+    const t = state.clock.elapsedTime
+    
+    // Pulsation du noyau
+    if (coreRef.current) {
+      const pulse = 1 + Math.sin(t * 2) * 0.15
+      coreRef.current.scale.setScalar(pulse)
+      
+      const material = coreRef.current.material as THREE.MeshStandardMaterial
+      material.emissiveIntensity = 3 + Math.sin(t * 3) * 0.8
+    }
+    
+    // Expansion des couches
+    if (layer1Ref.current) {
+      const expand1 = 1 + Math.sin(t * 0.5) * 0.3
+      layer1Ref.current.scale.setScalar(expand1)
+      layer1Ref.current.rotation.z += 0.002
+    }
+    
+    if (layer2Ref.current) {
+      const expand2 = 1 + Math.sin(t * 0.4 + 0.5) * 0.4
+      layer2Ref.current.scale.setScalar(expand2)
+      layer2Ref.current.rotation.z -= 0.003
+    }
+    
+    if (layer3Ref.current) {
+      const expand3 = 1 + Math.sin(t * 0.3 + 1) * 0.5
+      layer3Ref.current.scale.setScalar(expand3)
+      layer3Ref.current.rotation.z += 0.001
+    }
+    
+    // Animation des débris
+    if (debrisRef.current) {
+      const positions = debrisRef.current.geometry.attributes.position.array as Float32Array
+      
+      for (let i = 0; i < debris.count; i++) {
+        const expansion = (Math.sin(t * 0.2) + 1) * 3
+        positions[i * 3] = debris.velocities[i * 3] * expansion
+        positions[i * 3 + 1] = debris.velocities[i * 3 + 1] * expansion
+        positions[i * 3 + 2] = debris.velocities[i * 3 + 2] * expansion
+      }
+      
+      debrisRef.current.geometry.attributes.position.needsUpdate = true
+      debrisRef.current.rotation.y += 0.001
+    }
+  })
+  
+  return (
+    <group position={[70, 35, -100]}>
+      {/* Noyau ultra-brillant */}
+      <Sphere ref={coreRef} args={[2, 32, 32]}>
+        <meshStandardMaterial
+          color="#ffffff"
+          emissive="#ffff99"
+          emissiveIntensity={3.5}
+          roughness={0}
+          metalness={1}
+        />
+      </Sphere>
+      
+      {/* Couche 1 - Plasma blanc */}
+      <Sphere ref={layer1Ref} args={[3.5, 32, 32]}>
+        <meshStandardMaterial
+          color="#fff9e6"
+          emissive="#ffffcc"
+          emissiveIntensity={2.2}
+          transparent
+          opacity={0.5}
+          side={THREE.BackSide}
+          roughness={0}
+          blending={THREE.AdditiveBlending}
+        />
+      </Sphere>
+      
+      {/* Couche 2 - Orange incandescent */}
+      <Sphere ref={layer2Ref} args={[5.5, 32, 32]}>
+        <meshStandardMaterial
+          color="#ffcc66"
+          emissive="#ff9933"
+          emissiveIntensity={1.8}
+          transparent
+          opacity={0.4}
+          side={THREE.BackSide}
+          roughness={0}
+          blending={THREE.AdditiveBlending}
+        />
+      </Sphere>
+      
+      {/* Couche 3 - Rouge extérieur */}
+      <Sphere ref={layer3Ref} args={[8, 32, 32]}>
+        <meshStandardMaterial
+          color="#ff6633"
+          emissive="#ff3300"
+          emissiveIntensity={1.3}
+          transparent
+          opacity={0.25}
+          side={THREE.BackSide}
+          roughness={0}
+          blending={THREE.AdditiveBlending}
+        />
+      </Sphere>
+      
+      {/* Débris éjectés */}
+      <points ref={debrisRef}>
+        <bufferGeometry>
+          <bufferAttribute 
+            attach="attributes-position" 
+            count={debris.count} 
+            array={debris.positions} 
+            itemSize={3} 
+          />
+          <bufferAttribute 
+            attach="attributes-color" 
+            count={debris.count} 
+            array={debris.colors} 
+            itemSize={3} 
+          />
+          <bufferAttribute 
+            attach="attributes-size" 
+            count={debris.count} 
+            array={debris.sizes} 
+            itemSize={1} 
+          />
+        </bufferGeometry>
+        <pointsMaterial
+          size={0.5}
+          vertexColors
+          transparent
+          opacity={0.9}
+          blending={THREE.AdditiveBlending}
+          sizeAttenuation
+          depthWrite={false}
+        />
+      </points>
+    </group>
+  )
+})
+
+// ============================================================================
+// ASTEROÏDES
 // ============================================================================
 
 export const AsteroidField = React.memo(() => {
@@ -466,7 +846,7 @@ export const AsteroidField = React.memo(() => {
     meshRef.current.instanceMatrix.needsUpdate = true
   }, [positions, rotations, scales])
   
-  useFrame((state) => {
+  useFrame(() => {
     if (!meshRef.current) return
     
     for (let i = 0; i < count; i += 10) {
@@ -546,28 +926,25 @@ export const CosmicRays = React.memo(() => {
   
   return (
     <group ref={linesRef}>
-      {lines.map((line, i) => {
-        const points = [line.start, line.end]
-        return (
-          <line key={i}>
-            <bufferGeometry>
-              <bufferAttribute
-                attach="attributes-position"
-                count={2}
-                array={new Float32Array([...line.start.toArray(), ...line.end.toArray()])}
-                itemSize={3}
-              />
-            </bufferGeometry>
-            <lineBasicMaterial
-              color={line.color}
-              transparent
-              opacity={0.25}
-              blending={THREE.AdditiveBlending}
-              linewidth={line.width}
+      {lines.map((line, i) => (
+        <line key={i}>
+          <bufferGeometry>
+            <bufferAttribute
+              attach="attributes-position"
+              count={2}
+              array={new Float32Array([...line.start.toArray(), ...line.end.toArray()])}
+              itemSize={3}
             />
-          </line>
-        )
-      })}
+          </bufferGeometry>
+          <lineBasicMaterial
+            color={line.color}
+            transparent
+            opacity={0.25}
+            blending={THREE.AdditiveBlending}
+            linewidth={line.width}
+          />
+        </line>
+      ))}
     </group>
   )
 })
@@ -672,7 +1049,7 @@ export const CosmicDustClouds = React.memo(() => {
 })
 
 // ============================================================================
-// ENVIRONNEMENT COMPLET AAA+
+// ENVIRONNEMENT COMPLET
 // ============================================================================
 
 export const SpaceEnvironmentAAA = React.memo(() => {
@@ -684,6 +1061,8 @@ export const SpaceEnvironmentAAA = React.memo(() => {
       <HolographicRings position={[0, 0, 0]} scale={1} />
       <AsteroidField />
       <CosmicRays />
+      <DivineBlackHole />
+      <ExplodingSupernova />
       <fog attach="fog" args={['#000000', 40, 450]} />
     </>
   )
