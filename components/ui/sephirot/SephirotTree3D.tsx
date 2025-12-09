@@ -4,332 +4,13 @@
 import React, { useRef, useState, useMemo, useCallback } from 'react'
 import { Canvas, useFrame, extend } from '@react-three/fiber'
 import { 
-  OrbitControls, Line, Text, Float, Stars, Sparkles, Billboard, 
-  MeshTransmissionMaterial, Trail, shaderMaterial, Sphere, useTexture
+  OrbitControls, Line, Text, Float, Sparkles, Billboard, 
+  MeshTransmissionMaterial, Trail, Sphere
 } from '@react-three/drei'
 import * as THREE from 'three'
 import { useRouter } from 'next/navigation'
-import { EffectComposer, Bloom } from '@react-three/postprocessing'
-
-// --- SHADER MATERIAL GALAXIE OPTIMISÉ ---
-const GalaxyMaterial = shaderMaterial(
-  { 
-    time: 0,
-    color1: new THREE.Color('#ff006e'),
-    color2: new THREE.Color('#3a86ff'),
-    color3: new THREE.Color('#8338ec'),
-  },
-  `
-    varying vec2 vUv;
-    void main() {
-      vUv = uv;
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    }
-  `,
-  `
-    uniform float time;
-    uniform vec3 color1;
-    uniform vec3 color2;
-    uniform vec3 color3;
-    varying vec2 vUv;
-    
-    float hash(vec2 p) {
-      vec3 p3 = fract(vec3(p.xyx) * 0.13);
-      p3 += dot(p3, p3.yzx + 3.333);
-      return fract((p3.x + p3.y) * p3.z);
-    }
-    
-    float noise(vec2 p) {
-      vec2 i = floor(p);
-      vec2 f = fract(p);
-      vec2 u = f * f * (3.0 - 2.0 * f);
-      return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x),
-                 mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
-    }
-    
-    void main() {
-      vec2 uv = vUv;
-      float angle = atan(uv.y - 0.5, uv.x - 0.5) + time * 0.05;
-      float radius = length(uv - 0.5);
-      
-      float n1 = noise(uv * 8.0 + time * 0.1);
-      float combined = n1 * 0.8 + 0.2;
-      
-      vec3 color = mix(color1, color2, combined);
-      color = mix(color, color3, sin(angle * 4.0 + time * 0.5) * 0.5 + 0.5);
-      
-      float alpha = (1.0 - smoothstep(0.0, 0.6, radius)) * combined * 0.4;
-      
-      gl_FragColor = vec4(color, alpha);
-    }
-  `
-)
-
-extend({ GalaxyMaterial })
-
-// --- GALAXIE BACKGROUND OPTIMISÉE ---
-const GalaxyBackgroundHD = React.memo(() => {
-  const mesh = useRef<THREE.Mesh>(null!)
-  
-  useFrame((state) => {
-    if (mesh.current?.material) {
-      mesh.current.material.uniforms.time.value = state.clock.elapsedTime
-      mesh.current.rotation.z += 0.0002
-    }
-  })
-
-  return (
-    <mesh ref={mesh} position={[0, 0, -120]} scale={180}>
-      <planeGeometry args={[1, 1, 64, 64]} />
-      <galaxyMaterial transparent side={THREE.DoubleSide} depthWrite={false} />
-    </mesh>
-  )
-})
-
-// --- SUPERNOVA OPTIMISÉE ---
-const Supernova4K = React.memo(() => {
-  const coreRef = useRef<THREE.Mesh>(null!)
-  const ring1Ref = useRef<THREE.Mesh>(null!)
-  
-  useFrame((state) => {
-    const t = state.clock.elapsedTime
-    
-    if (coreRef.current) {
-      coreRef.current.rotation.z += 0.002
-      const scale = 28 + Math.sin(t * 0.3) * 3
-      coreRef.current.scale.setScalar(scale)
-    }
-    
-    if (ring1Ref.current) {
-      ring1Ref.current.rotation.z -= 0.003
-    }
-  })
-
-  return (
-    <group position={[40, 30, -60]}>
-      <Sphere args={[1.5, 32, 32]}>
-        <meshStandardMaterial 
-          color="#ff2200" 
-          emissive="#ff4500"
-          emissiveIntensity={2.5}
-          roughness={0}
-          metalness={1}
-        />
-      </Sphere>
-
-      <mesh ref={coreRef}>
-        <sphereGeometry args={[1.2, 32, 32]} />
-        <meshStandardMaterial 
-          color="#ff6b35" 
-          emissive="#ff4500"
-          emissiveIntensity={2}
-          transparent 
-          opacity={0.7}
-          side={THREE.BackSide}
-        />
-      </mesh>
-
-      <mesh ref={ring1Ref}>
-        <torusGeometry args={[8, 0.3, 16, 64]} />
-        <meshStandardMaterial 
-          color="#ff8800" 
-          emissive="#ff6b35"
-          emissiveIntensity={1.5}
-          transparent 
-          opacity={0.6}
-        />
-      </mesh>
-
-      <Sparkles 
-        count={200} 
-        scale={20} 
-        size={6} 
-        speed={0.4} 
-        opacity={0.6} 
-        color="#ff6b35" 
-      />
-    </group>
-  )
-})
-
-// --- BLACK HOLE OPTIMISÉ ---
-const BlackHole4K = React.memo(() => {
-  const diskRef = useRef<THREE.Mesh>(null!)
-  const lensRef = useRef<THREE.Mesh>(null!)
-  
-  useFrame((state) => {
-    const t = state.clock.elapsedTime
-    
-    if (diskRef.current) diskRef.current.rotation.z += 0.03
-    if (lensRef.current) {
-      const scale = 1.1 + Math.sin(t * 2) * 0.08
-      lensRef.current.scale.setScalar(scale)
-    }
-  })
-
-  return (
-    <group position={[-50, -25, -70]}>
-      <Sphere args={[4, 64, 64]}>
-        <meshStandardMaterial 
-          color="#000000"
-          metalness={1}
-          roughness={0.1}
-        />
-      </Sphere>
-      
-      <mesh ref={lensRef}>
-        <sphereGeometry args={[6, 64, 64]} />
-        <meshStandardMaterial 
-          color="#3730a3" 
-          emissive="#4f46e5"
-          emissiveIntensity={0.6}
-          transparent 
-          opacity={0.15}
-          side={THREE.BackSide}
-          roughness={0}
-        />
-      </mesh>
-      
-      <mesh ref={diskRef} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[9, 1.2, 32, 128]} />
-        <meshStandardMaterial 
-          color="#4f46e5" 
-          emissive="#6366f1"
-          emissiveIntensity={1.5}
-          roughness={0.2}
-          metalness={0.8}
-        />
-      </mesh>
-
-      <Sparkles 
-        count={150} 
-        scale={15} 
-        size={4} 
-        speed={1.5} 
-        opacity={0.7} 
-        color="#8b5cf6" 
-      />
-    </group>
-  )
-})
-
-// --- NEBULA OPTIMISÉE ---
-const NebulaUltraHD = React.memo(() => {
-  const count = 5000
-  const positions = useMemo(() => {
-    const pos = new Float32Array(count * 3)
-    const scale = 250
-    
-    for (let i = 0; i < count; i++) {
-      const angle = Math.random() * Math.PI * 2
-      const radius = Math.pow(Math.random(), 0.7) * scale
-      const height = (Math.random() - 0.5) * 50
-      
-      pos[i * 3] = Math.cos(angle) * radius + (Math.random() - 0.5) * 15
-      pos[i * 3 + 1] = height + (Math.random() - 0.5) * 15
-      pos[i * 3 + 2] = Math.sin(angle) * radius + (Math.random() - 0.5) * 15
-    }
-    return pos
-  }, [])
-
-  const colors = useMemo(() => {
-    const cols = new Float32Array(count * 3)
-    const palette = [
-      new THREE.Color('#ff006e'),
-      new THREE.Color('#8338ec'),
-      new THREE.Color('#3a86ff'),
-      new THREE.Color('#06ffa5'),
-    ]
-    
-    for (let i = 0; i < count; i++) {
-      const color = palette[Math.floor(Math.random() * palette.length)]
-      const brightness = 0.7 + Math.random() * 0.3
-      cols[i * 3] = color.r * brightness
-      cols[i * 3 + 1] = color.g * brightness
-      cols[i * 3 + 2] = color.b * brightness
-    }
-    return cols
-  }, [])
-
-  const sizes = useMemo(() => {
-    const s = new Float32Array(count)
-    for (let i = 0; i < count; i++) {
-      s[i] = Math.random() * 1 + 0.2
-    }
-    return s
-  }, [])
-
-  const pointsRef = useRef<THREE.Points>(null!)
-
-  useFrame((state) => {
-    if (pointsRef.current) {
-      pointsRef.current.rotation.y += 0.0003
-      pointsRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.05) * 0.1
-    }
-  })
-
-  return (
-    <points ref={pointsRef}>
-      <bufferGeometry>
-        <bufferAttribute attach="attributes-position" count={count} array={positions} itemSize={3} />
-        <bufferAttribute attach="attributes-color" count={count} array={colors} itemSize={3} />
-        <bufferAttribute attach="attributes-size" count={count} array={sizes} itemSize={1} />
-      </bufferGeometry>
-      <pointsMaterial
-        size={0.5}
-        vertexColors
-        transparent
-        opacity={0.8}
-        blending={THREE.AdditiveBlending}
-        sizeAttenuation
-        depthWrite={false}
-      />
-    </points>
-  )
-})
-
-// --- ENERGY RINGS OPTIMISÉS ---
-const EnergyRings4K = React.memo(() => {
-  const rings = useRef<THREE.Group>(null!)
-  
-  useFrame((state) => {
-    const t = state.clock.elapsedTime
-    
-    if (rings.current) {
-      rings.current.rotation.y += 0.002
-      
-      rings.current.children.forEach((ring, i) => {
-        const scale = 1 + Math.sin(t * 0.3 + i * 0.5) * 0.15
-        ring.scale.setScalar(scale)
-      })
-    }
-  })
-
-  const ringConfigs = [
-    { radius: 24, thickness: 0.15, color: '#00ffff', emissive: '#00dddd', intensity: 1.5 },
-    { radius: 30, thickness: 0.15, color: '#ff00ff', emissive: '#dd00dd', intensity: 1.3 },
-    { radius: 36, thickness: 0.12, color: '#ffff00', emissive: '#dddd00', intensity: 1.1 },
-  ]
-
-  return (
-    <group ref={rings}>
-      {ringConfigs.map((config, i) => (
-        <mesh key={i} rotation={[Math.PI / 2, 0, i * Math.PI / 6]}>
-          <torusGeometry args={[config.radius, config.thickness, 32, 128]} />
-          <meshStandardMaterial 
-            color={config.color}
-            emissive={config.emissive}
-            emissiveIntensity={config.intensity}
-            transparent 
-            opacity={0.25}
-            roughness={0}
-            metalness={0.8}
-          />
-        </mesh>
-      ))}
-    </group>
-  )
-})
+import { EffectComposer, Bloom, DepthOfField } from '@react-three/postprocessing'
+import { SpaceEnvironmentAAA } from './SpaceEnvironmentAAA'
 
 // --- CRYSTAL NODE ULTRA OPTIMISÉ ---
 const CrystalNodeHD = React.memo(({ position, color, accent, name, subtitle, route, onClick, energy }: any) => {
@@ -339,13 +20,13 @@ const CrystalNodeHD = React.memo(({ position, color, accent, name, subtitle, rou
 
   useFrame((state, delta) => {
     if(group.current) {
-      group.current.rotation.y += delta * 0.1
+      group.current.rotation.y += delta * 0.08
       
-      const breathe = 1 + Math.sin(state.clock.elapsedTime * 1.5) * 0.05
-      const scale = hovered ? 1.5 * breathe : 1 * breathe
-      group.current.scale.lerp(new THREE.Vector3(scale, scale, scale), 0.1)
+      const breathe = 1 + Math.sin(state.clock.elapsedTime * 1.3) * 0.04
+      const scale = hovered ? 1.45 * breathe : 1 * breathe
+      group.current.scale.lerp(new THREE.Vector3(scale, scale, scale), 0.08)
       
-      group.current.position.y = position[1] + Math.sin(state.clock.elapsedTime * 0.6 + position[0]) * 0.2
+      group.current.position.y = position[1] + Math.sin(state.clock.elapsedTime * 0.5 + position[0]) * 0.18
     }
   })
 
@@ -356,14 +37,14 @@ const CrystalNodeHD = React.memo(({ position, color, accent, name, subtitle, rou
 
   const handleClick = useCallback(() => {
     setActive(true)
-    setTimeout(() => onClick(route), 200)
+    setTimeout(() => onClick(route), 180)
   }, [onClick, route])
 
   const routeName = route === '/' ? 'HOME' : route.replace('/', '').toUpperCase()
 
   return (
     <group ref={group} position={position}>
-      <Float speed={1} rotationIntensity={0.3} floatIntensity={0.6}>
+      <Float speed={0.9} rotationIntensity={0.25} floatIntensity={0.5}>
         
         {/* Cristal central */}
         <mesh
@@ -371,81 +52,81 @@ const CrystalNodeHD = React.memo(({ position, color, accent, name, subtitle, rou
           onPointerOut={(e) => { e.stopPropagation(); handleHover(false) }}
           onClick={(e) => { e.stopPropagation(); handleClick() }}
         >
-          <octahedronGeometry args={[1.5, 0]} />
+          <octahedronGeometry args={[1.4, 0]} />
           <MeshTransmissionMaterial
             backside
-            samples={8}
-            resolution={1024}
-            thickness={1}
-            chromaticAberration={0.4}
-            anisotropy={0.5}
-            distortion={0.3}
-            distortionScale={0.5}
-            temporalDistortion={0.2}
+            samples={6}
+            resolution={512}
+            thickness={0.9}
+            chromaticAberration={0.35}
+            anisotropy={0.4}
+            distortion={0.25}
+            distortionScale={0.4}
+            temporalDistortion={0.15}
             color={accent}
             roughness={0}
-            transmission={0.98}
-            ior={2.5}
+            transmission={0.97}
+            ior={2.45}
             clearcoat={1}
             clearcoatRoughness={0}
-            attenuationDistance={0.8}
+            attenuationDistance={0.75}
             attenuationColor={accent}
           />
         </mesh>
 
-        {/* Noyau */}
-        <mesh scale={0.7}>
+        {/* Noyau wireframe */}
+        <mesh scale={0.65}>
           <icosahedronGeometry args={[1, 2]} />
           <meshStandardMaterial 
             color={accent}
             emissive={accent}
-            emissiveIntensity={hovered ? 2 : 1}
+            emissiveIntensity={hovered ? 1.9 : 1}
             wireframe 
             transparent
-            opacity={0.8}
+            opacity={0.75}
             roughness={0}
             metalness={1}
           />
         </mesh>
 
-        {/* Anneaux réduits */}
+        {/* Anneaux orbitaux */}
         {[0, 1, 2].map((i) => (
           <group key={i} rotation={[Math.PI / 4 * i, Math.PI / 3 * i, 0]}>
             <mesh>
-              <ringGeometry args={[2 + i * 0.2, 2.05 + i * 0.2, 128]} />
+              <ringGeometry args={[1.9 + i * 0.18, 1.95 + i * 0.18, 96]} />
               <meshStandardMaterial 
                 color={color}
                 emissive={accent}
-                emissiveIntensity={hovered ? 1.5 : 0.6}
+                emissiveIntensity={hovered ? 1.4 : 0.55}
                 transparent 
-                opacity={hovered ? 0.6 : 0.3} 
+                opacity={hovered ? 0.58 : 0.28} 
                 side={THREE.DoubleSide}
                 roughness={0}
-                metalness={0.8}
+                metalness={0.75}
               />
             </mesh>
           </group>
         ))}
 
-        {/* Aura optimisée */}
+        {/* Aura hover */}
         {hovered && (
           <>
             <Sparkles 
-              count={80} 
-              scale={6} 
-              size={6} 
-              speed={2.5} 
-              opacity={0.8} 
+              count={60} 
+              scale={5.5} 
+              size={5} 
+              speed={2.2} 
+              opacity={0.75} 
               color={accent} 
             />
             
-            <Sphere args={[2.5, 64, 64]}>
+            <Sphere args={[2.4, 48, 48]}>
               <meshStandardMaterial 
                 color={accent}
                 emissive={accent}
-                emissiveIntensity={1.5}
+                emissiveIntensity={1.3}
                 transparent 
-                opacity={0.15}
+                opacity={0.13}
                 side={THREE.BackSide}
                 roughness={0}
               />
@@ -454,44 +135,44 @@ const CrystalNodeHD = React.memo(({ position, color, accent, name, subtitle, rou
         )}
 
         {/* Panneau labels */}
-        <Billboard position={[0, 4.3, 0]}>
+        <Billboard position={[0, 4.1, 0]}>
           <mesh>
-            <planeGeometry args={[4.5, 2]} />
+            <planeGeometry args={[4.3, 1.9]} />
             <meshStandardMaterial 
               color="#000000"
               transparent
-              opacity={0.8}
+              opacity={0.78}
               emissive="#000000"
-              emissiveIntensity={0.4}
-              roughness={0.3}
+              emissiveIntensity={0.35}
+              roughness={0.25}
               metalness={0.6}
             />
           </mesh>
           
           <mesh position={[0, 0, 0.01]}>
-            <planeGeometry args={[4.6, 2.1]} />
+            <planeGeometry args={[4.4, 2]} />
             <meshStandardMaterial 
               color={accent}
               emissive={accent}
-              emissiveIntensity={hovered ? 1.5 : 0.6}
+              emissiveIntensity={hovered ? 1.4 : 0.5}
               transparent
-              opacity={0.25}
+              opacity={0.23}
               side={THREE.BackSide}
             />
           </mesh>
         </Billboard>
 
         {/* Labels 3D */}
-        <Billboard position={[0, 4.3, 0]}>
+        <Billboard position={[0, 4.1, 0]}>
           <Text 
-            position={[0, 0.6, 0.1]} 
-            fontSize={0.32} 
+            position={[0, 0.56, 0.1]} 
+            fontSize={0.29} 
             color={accent}
             anchorX="center" 
             anchorY="middle" 
-            letterSpacing={0.25}
+            letterSpacing={0.23}
             fontWeight={900}
-            outlineWidth={0.04}
+            outlineWidth={0.037}
             outlineColor="#000000"
             outlineOpacity={1}
           >
@@ -500,28 +181,28 @@ const CrystalNodeHD = React.memo(({ position, color, accent, name, subtitle, rou
           
           <Text 
             position={[0, 0, 0.1]} 
-            fontSize={0.6} 
+            fontSize={0.57} 
             fontWeight={900} 
             color="white" 
             anchorX="center" 
             anchorY="middle" 
-            outlineWidth={0.1} 
+            outlineWidth={0.095} 
             outlineColor="#000000"
             outlineOpacity={1}
-            letterSpacing={0.12}
+            letterSpacing={0.11}
           >
             {name}
           </Text>
           
           <Text 
-            position={[0, -0.5, 0.1]} 
-            fontSize={0.25} 
+            position={[0, -0.48, 0.1]} 
+            fontSize={0.23} 
             color={hovered ? '#ffffff' : accent} 
             anchorX="center" 
             anchorY="middle" 
-            letterSpacing={0.25}
+            letterSpacing={0.23}
             fontWeight={700}
-            outlineWidth={0.035}
+            outlineWidth={0.032}
             outlineColor="#000000"
             outlineOpacity={1}
           >
@@ -530,64 +211,64 @@ const CrystalNodeHD = React.memo(({ position, color, accent, name, subtitle, rou
         </Billboard>
 
         {/* Barre d'énergie */}
-        <Billboard position={[0, -3.5, 0]}>
+        <Billboard position={[0, -3.3, 0]}>
           <mesh position={[0, 0, -0.01]}>
-            <planeGeometry args={[3, 0.16]} />
+            <planeGeometry args={[2.9, 0.15]} />
             <meshStandardMaterial 
               color="#0a0a0a" 
               transparent 
-              opacity={0.9}
+              opacity={0.87}
               emissive="#000000"
-              emissiveIntensity={0.2}
-              roughness={0.2}
-              metalness={0.7}
+              emissiveIntensity={0.18}
+              roughness={0.18}
+              metalness={0.68}
             />
           </mesh>
           
           <mesh position={[0, 0, 0]}>
-            <planeGeometry args={[3.1, 0.2]} />
+            <planeGeometry args={[3, 0.19]} />
             <meshStandardMaterial 
               color={accent}
               emissive={accent}
-              emissiveIntensity={0.4}
+              emissiveIntensity={0.38}
               transparent 
-              opacity={0.3}
+              opacity={0.29}
               side={THREE.BackSide}
             />
           </mesh>
           
-          <mesh position={[-(3 * (1 - energy)) / 2, 0, 0.01]}>
-            <planeGeometry args={[3 * energy, 0.14]} />
+          <mesh position={[-(2.9 * (1 - energy)) / 2, 0, 0.01]}>
+            <planeGeometry args={[2.9 * energy, 0.13]} />
             <meshStandardMaterial 
               color={accent}
               emissive={accent}
-              emissiveIntensity={2}
+              emissiveIntensity={1.9}
               transparent 
-              opacity={0.95}
+              opacity={0.93}
               roughness={0}
               metalness={1}
             />
           </mesh>
           
           <mesh position={[0, 0, 0.02]}>
-            <planeGeometry args={[3 * energy, 0.07]} />
+            <planeGeometry args={[2.9 * energy, 0.065]} />
             <meshStandardMaterial 
               color="#ffffff"
               emissive="#ffffff"
-              emissiveIntensity={1.2}
+              emissiveIntensity={1.1}
               transparent 
-              opacity={0.3}
+              opacity={0.29}
             />
           </mesh>
           
           <Text 
             position={[0, 0, 0.03]} 
-            fontSize={0.2} 
+            fontSize={0.19} 
             color="white" 
             anchorX="center" 
             anchorY="middle" 
             fontWeight={900}
-            outlineWidth={0.025}
+            outlineWidth={0.023}
             outlineColor="#000000"
             outlineOpacity={1}
           >
@@ -595,19 +276,19 @@ const CrystalNodeHD = React.memo(({ position, color, accent, name, subtitle, rou
           </Text>
         </Billboard>
 
-        {/* Trail optimisé */}
+        {/* Trail transition */}
         {active && (
           <Trail
-            width={3}
-            length={8}
+            width={2.7}
+            length={7}
             color={new THREE.Color(accent)}
             attenuation={(t) => t * t}
           >
-            <Sphere args={[0.15, 16, 16]}>
+            <Sphere args={[0.13, 14, 14]}>
               <meshStandardMaterial 
                 color={accent}
                 emissive={accent}
-                emissiveIntensity={2.5}
+                emissiveIntensity={2.3}
               />
             </Sphere>
           </Trail>
@@ -617,7 +298,7 @@ const CrystalNodeHD = React.memo(({ position, color, accent, name, subtitle, rou
   )
 })
 
-// --- LIENS OPTIMISÉS ---
+// --- LIENS ÉNERGÉTIQUES ---
 const EnergyLinksHD = React.memo(() => {
   const linesRef = useRef<THREE.Group>(null!)
   
@@ -626,7 +307,7 @@ const EnergyLinksHD = React.memo(() => {
       linesRef.current.children.forEach((child, i) => {
         if (child instanceof THREE.Line) {
           const material = child.material as THREE.LineBasicMaterial
-          material.opacity = 0.25 + Math.sin(state.clock.elapsedTime * 1.2 + i * 0.3) * 0.15
+          material.opacity = 0.23 + Math.sin(state.clock.elapsedTime * 1.1 + i * 0.27) * 0.14
         }
       })
     }
@@ -645,16 +326,16 @@ const EnergyLinksHD = React.memo(() => {
           key={i} 
           points={[line.start, line.end]} 
           color={line.color} 
-          lineWidth={2} 
+          lineWidth={1.9} 
           transparent 
-          opacity={0.3}
+          opacity={0.27}
         />
       ))}
     </group>
   )
 })
 
-// --- DATA ---
+// --- DATA CONFIGURATION ---
 const NODES = [
   { name: 'KETHER', subtitle: 'CROWN', position: [0, 10, 0], color: '#ffffff', accent: '#a5f3fc', route: '/home', energy: 1.0 },
   { name: 'TIPHERET', subtitle: 'BEAUTY', position: [0, 0, 0], color: '#fde68a', accent: '#f59e0b', route: '/audiovisuel', energy: 0.9 },
@@ -673,7 +354,7 @@ const LINKS = [
   [0, 7], [0, 1], [4, 1], [7, 1], [5, 1], [8, 1], [6, 2], [9, 2], [5, 6], [8, 9]
 ]
 
-// --- MAIN COMPONENT ULTRA OPTIMISÉ ---
+// --- COMPOSANT PRINCIPAL AAA+ ---
 export default function SephirotTree3D() {
   const router = useRouter()
   
@@ -682,71 +363,85 @@ export default function SephirotTree3D() {
   }, [router])
 
   return (
-    <div style={{ width: '100vw', height: '100vh', position: 'absolute', top: 0, left: 0, background: '#000000' }}>
+    <div style={{ 
+      width: '100vw', 
+      height: '100vh', 
+      position: 'absolute', 
+      top: 0, 
+      left: 0, 
+      background: '#000000' 
+    }}>
       <Canvas 
-        dpr={[1, 1.5]} 
-        camera={{ position: [0, 0, 55], fov: 48 }}
+        dpr={[1, 2]} 
+        camera={{ position: [0, 0, 52], fov: 46 }}
         gl={{ 
           antialias: true,
           alpha: false,
           powerPreference: 'high-performance',
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1,
+          toneMappingExposure: 0.95,
           outputColorSpace: THREE.SRGBColorSpace,
         }}
-        performance={{ min: 0.5 }}
-        frameloop="demand"
+        performance={{ min: 0.5, max: 1 }}
+        frameloop="always"
       >
-        <color attach="background" args={['#000000']} />
-        <fog attach="fog" args={['#000510', 70, 200]} />
+        <color attach="background" args={['#000005']} />
         
-        {/* Éclairages optimisés */}
-        <ambientLight intensity={0.2} />
-        <directionalLight position={[40, 40, 40]} intensity={2} color="#60a5fa" />
-        <directionalLight position={[-40, -40, 40]} intensity={1.5} color="#a855f7" />
-        <pointLight position={[0, 0, 30]} intensity={2} color="#ffffff" />
-        <spotLight position={[0, 45, 25]} intensity={2.5} angle={0.3} penumbra={0.5} color="#3a86ff" />
+        {/* Éclairages cinématiques */}
+        <ambientLight intensity={0.17} />
+        <directionalLight position={[35, 35, 35]} intensity={1.9} color="#60a5fa" castShadow={false} />
+        <directionalLight position={[-35, -35, 35]} intensity={1.35} color="#a855f7" />
+        <pointLight position={[0, 0, 27]} intensity={1.85} color="#ffffff" />
+        <spotLight 
+          position={[0, 42, 23]} 
+          intensity={2.3} 
+          angle={0.29} 
+          penumbra={0.47} 
+          color="#3a86ff"
+          castShadow={false}
+        />
 
-        {/* Environnement spatial optimisé */}
-        <GalaxyBackgroundHD />
-        <Stars radius={400} depth={100} count={10000} factor={7} saturation={0.8} fade speed={0.5} />
-        <NebulaUltraHD />
-        <Supernova4K />
-        <BlackHole4K />
-        <EnergyRings4K />
+        {/* ENVIRONNEMENT SPATIAL AAA+ */}
+        <SpaceEnvironmentAAA />
 
         {/* Arbre Sephirot */}
-        <group position={[0, 2, 0]}>
+        <group position={[0, 1.8, 0]}>
           <EnergyLinksHD />
           {NODES.map((node, i) => (
             <CrystalNodeHD key={i} {...node} onClick={handleNodeClick} />
           ))}
         </group>
 
-        {/* Post-processing minimal */}
-        <EffectComposer multisampling={4}>
+        {/* Post-processing cinématique */}
+        <EffectComposer multisampling={2}>
           <Bloom 
-            intensity={0.6} 
-            luminanceThreshold={0.3} 
-            luminanceSmoothing={0.8}
+            intensity={0.52} 
+            luminanceThreshold={0.32} 
+            luminanceSmoothing={0.77}
             mipmapBlur
-            radius={0.5}
+            radius={0.47}
+          />
+          <DepthOfField
+            focusDistance={0.02}
+            focalLength={0.05}
+            bokehScale={1.5}
+            height={480}
           />
         </EffectComposer>
 
         {/* Contrôles optimisés */}
         <OrbitControls 
           enableDamping 
-          dampingFactor={0.03} 
+          dampingFactor={0.038} 
           autoRotate 
-          autoRotateSpeed={0.08} 
-          maxDistance={90} 
-          minDistance={20}
+          autoRotateSpeed={0.065} 
+          maxDistance={87} 
+          minDistance={19}
           enablePan={false}
-          maxPolarAngle={Math.PI / 1.5}
-          minPolarAngle={Math.PI / 3.5}
-          rotateSpeed={0.4}
-          zoomSpeed={0.6}
+          maxPolarAngle={Math.PI / 1.58}
+          minPolarAngle={Math.PI / 3.58}
+          rotateSpeed={0.37}
+          zoomSpeed={0.57}
           makeDefault
         />
       </Canvas>
