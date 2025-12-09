@@ -1,606 +1,780 @@
 'use client'
 
 import { Canvas, useFrame } from '@react-three/fiber'
-import { OrbitControls, Stars, Float, Text, Billboard, Sphere, MeshDistortMaterial } from '@react-three/drei'
-import { EffectComposer, Bloom, ChromaticAberration } from '@react-three/postprocessing'
+import { OrbitControls, Float, Text, Billboard, Stars, MeshDistortMaterial, Sphere, Environment } from '@react-three/drei'
+import { EffectComposer, Bloom, ChromaticAberration, Vignette } from '@react-three/postprocessing'
 import * as THREE from 'three'
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Home as HomeIcon, Book, Sparkles, Eye, Infinity, Circle, Triangle, Hexagon, Star, Layers, ChevronRight, Scroll, Crown } from 'lucide-react'
+import { Eye, Triangle, Scroll, ChevronLeft, ChevronRight } from 'lucide-react'
+import { tablets } from './tabletsData'
 
-// --- SACRED GEOMETRY PARTICLES ---
-function SacredGeometryParticles() {
+// === PARTICULES ÉSOTÉRIQUES OPTIMISÉES ===
+function EsotericParticles() {
   const pointsRef = useRef<THREE.Points>(null!)
-  const count = 2000
-  
-  const [positions] = useState(() => {
+  const count = 3500
+
+  const [positions, colors, sizes] = useMemo(() => {
     const pos = new Float32Array(count * 3)
+    const cols = new Float32Array(count * 3)
+    const szs = new Float32Array(count)
+    
+    const palette = [
+      new THREE.Color('#fbbf24'),
+      new THREE.Color('#f59e0b'),
+      new THREE.Color('#8b5cf6'),
+      new THREE.Color('#6366f1'),
+      new THREE.Color('#38bdf8'),
+      new THREE.Color('#fde68a'),
+    ]
+
     for (let i = 0; i < count; i++) {
-      const radius = Math.random() * 60
+      const radius = 55 + Math.random() * 55
       const theta = Math.random() * Math.PI * 2
       const phi = Math.random() * Math.PI
       
-      pos[i * 3] = radius * Math.sin(phi) * Math.cos(theta)
+      pos[i * 3 + 0] = radius * Math.sin(phi) * Math.cos(theta)
       pos[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta)
       pos[i * 3 + 2] = radius * Math.cos(phi)
-    }
-    return pos
-  })
 
-  const [colors] = useState(() => {
-    const cols = new Float32Array(count * 3)
-    const purple = new THREE.Color('#8b5cf6')
-    const blue = new THREE.Color('#3b82f6')
-    const gold = new THREE.Color('#f59e0b')
-    
-    for (let i = 0; i < count; i++) {
-      const rand = Math.random()
-      const color = rand < 0.33 ? purple : rand < 0.66 ? blue : gold
-      const brightness = 0.6 + Math.random() * 0.4
-      
-      cols[i * 3] = color.r * brightness
+      const color = palette[Math.floor(Math.random() * palette.length)]
+      const brightness = 0.7 + Math.random() * 0.3
+      cols[i * 3 + 0] = color.r * brightness
       cols[i * 3 + 1] = color.g * brightness
       cols[i * 3 + 2] = color.b * brightness
+
+      szs[i] = 0.18 + Math.random() * 0.3
     }
-    return cols
-  })
+    return [pos, cols, szs]
+  }, [])
 
   useFrame((state, delta) => {
-    if (pointsRef.current) {
-      pointsRef.current.rotation.y += delta * 0.08
-      pointsRef.current.rotation.x += delta * 0.03
-    }
+    if (!pointsRef.current) return
+    pointsRef.current.rotation.y += delta * 0.035
+    pointsRef.current.rotation.x += delta * 0.012
   })
 
-  return (
-    <points ref={pointsRef}>
-      <bufferGeometry>
-        <bufferAttribute attach="attributes-position" args={[positions, 3]} count={count} array={positions} itemSize={3} />
-        <bufferAttribute attach="attributes-color" count={count} array={colors} itemSize={3} args={[colors, 3]} />
-      </bufferGeometry>
-      <pointsMaterial
-        size={0.3}
-        vertexColors
-        transparent
-        opacity={0.8}
-        blending={THREE.AdditiveBlending}
-        sizeAttenuation
-      />
-    </points>
-  )
-}
-
-// --- CENTRAL TREE OF LIFE SYMBOL ---
-function TreeOfLifeCore() {
-  const coreRef = useRef<THREE.Group>(null!)
-  
-  useFrame((state) => {
-    if (coreRef.current) {
-      coreRef.current.rotation.y += 0.003
-      coreRef.current.position.y = Math.sin(state.clock.elapsedTime * 0.3) * 0.3
-    }
-  })
+  const glyphs = ['✶', '✹', '✦', '☿', '☯', '✡', '⟁', '☾', '☀', '◬', '◭', '◮', 'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח']
 
   return (
-    <group ref={coreRef} position={[0, 0, -10]}>
-      {/* Central Sphere - Kether */}
-      <Sphere args={[1.8, 64, 64]}>
-        <MeshDistortMaterial
-          color="#f59e0b"
-          emissive="#f59e0b"
-          emissiveIntensity={2.5}
-          distort={0.3}
-          speed={1.5}
-          roughness={0}
-          metalness={1}
+    <group>
+      <points ref={pointsRef}>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" args={[positions, 3]} />
+          <bufferAttribute attach="attributes-color" args={[colors, 3]} />
+          <bufferAttribute attach="attributes-size" args={[sizes, 1]} />
+        </bufferGeometry>
+        <pointsMaterial
+          vertexColors
           transparent
           opacity={0.9}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+          sizeAttenuation
         />
-      </Sphere>
+      </points>
 
-      {/* Inner Light */}
-      <Sphere args={[2.2, 32, 32]}>
-        <meshStandardMaterial
-          color="#fbbf24"
-          emissive="#fbbf24"
-          emissiveIntensity={2}
-          wireframe
-          transparent
-          opacity={0.5}
-        />
-      </Sphere>
-
-      {/* Sacred Rings */}
-      {[0, 1, 2, 3].map((i) => (
-        <group key={i} rotation={[Math.PI / 4 * i, Math.PI / 3 * i, 0]}>
-          <mesh>
-            <torusGeometry args={[3 + i * 0.8, 0.08, 16, 64]} />
-            <meshStandardMaterial
-              color={i % 2 === 0 ? '#8b5cf6' : '#3b82f6'}
-              emissive={i % 2 === 0 ? '#8b5cf6' : '#3b82f6'}
-              emissiveIntensity={2}
-              transparent
-              opacity={0.6}
-            />
-          </mesh>
-        </group>
-      ))}
-
-      {/* Outer Protection Circle */}
-      <mesh rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[6, 0.12, 16, 64]} />
-        <meshStandardMaterial
-          color="#f59e0b"
-          emissive="#f59e0b"
-          emissiveIntensity={2.5}
-          transparent
-          opacity={0.8}
-        />
-      </mesh>
-
-      {/* Label */}
-      <Billboard position={[0, 5, 0]}>
-        <Text
-          fontSize={0.7}
-          color="#f59e0b"
-          anchorX="center"
-          anchorY="middle"
-          outlineWidth={0.05}
-          outlineColor="#000000"
-          fontWeight={900}
-        >
-          TREE OF LIFE
-        </Text>
-      </Billboard>
+      {Array.from({ length: 80 }).map((_, i) => {
+        const radius = 48 + Math.random() * 38
+        const theta = Math.random() * Math.PI * 2
+        const phi = Math.random() * Math.PI
+        const x = radius * Math.sin(phi) * Math.cos(theta)
+        const y = radius * Math.sin(phi) * Math.sin(theta)
+        const z = radius * Math.cos(phi)
+        const glyph = glyphs[i % glyphs.length]
+        const colors = ['#fbbf24', '#8b5cf6', '#38bdf8', '#f59e0b', '#fde68a']
+        const col = colors[i % colors.length]
+        const size = 0.85 + Math.random() * 0.8
+        return (
+          <Billboard key={i} position={[x, y, z]}>
+            <Text fontSize={size} color={col} outlineWidth={0.07} outlineColor="#000000">
+              {glyph}
+            </Text>
+          </Billboard>
+        )
+      })}
     </group>
   )
 }
 
-// --- FLOATING GEOMETRIC SHAPES ---
-function FloatingGeometry() {
+// === PYRAMIDE DIVINE ULTRA NETTE ===
+function DivinePyramid() {
   const groupRef = useRef<THREE.Group>(null!)
+  const eyeRef = useRef<THREE.Group>(null!)
+  const ringsRef = useRef<THREE.Group>(null!)
   
-  const shapes = [
-    { pos: [-12, 6, -12], geometry: 'octahedron', color: '#8b5cf6' },
-    { pos: [12, 4, -14], geometry: 'icosahedron', color: '#3b82f6' },
-    { pos: [-10, -4, -13], geometry: 'dodecahedron', color: '#f59e0b' },
-    { pos: [10, -6, -11], geometry: 'tetrahedron', color: '#06b6d4' },
-  ]
+  const pyramidTextures = useMemo(() => {
+    return [
+      { y: -3.8, scale: 7, color: '#d97706', emissive: '#f59e0b', intensity: 2.2, metalness: 0.98, roughness: 0.05 },
+      { y: -0.3, scale: 5.2, color: '#ea580c', emissive: '#fb923c', intensity: 2.5, metalness: 0.96, roughness: 0.08 },
+      { y: 3, scale: 3.3, color: '#fbbf24', emissive: '#fde68a', intensity: 2.8, metalness: 0.99, roughness: 0.02 },
+    ]
+  }, [])
 
   useFrame((state) => {
-    if (groupRef.current) {
-      groupRef.current.children.forEach((mesh, i) => {
-        mesh.position.y += Math.sin(state.clock.elapsedTime + i * 1.5) * 0.008
-        mesh.rotation.x += 0.003
-        mesh.rotation.y += 0.005
-        mesh.rotation.z += 0.002
-      })
+    if (!groupRef.current) return
+    const t = state.clock.elapsedTime
+    
+    groupRef.current.rotation.y = Math.sin(t * 0.18) * 0.6
+    groupRef.current.position.y = 1.5 + Math.sin(t * 0.35) * 0.7
+    
+    if (eyeRef.current) {
+      eyeRef.current.rotation.z = t * 0.3
+      eyeRef.current.position.y = 5.5 + Math.sin(t * 0.5) * 0.3
+    }
+    
+    if (ringsRef.current) {
+      ringsRef.current.rotation.z = t * 0.15
     }
   })
 
   return (
-    <group ref={groupRef}>
-      {shapes.map((shape, i) => (
-        <Float key={i} speed={1.2} rotationIntensity={0.4} floatIntensity={0.6}>
-          <mesh position={shape.pos as [number, number, number]}>
-            {shape.geometry === 'octahedron' && <octahedronGeometry args={[1.2]} />}
-            {shape.geometry === 'icosahedron' && <icosahedronGeometry args={[1.2]} />}
-            {shape.geometry === 'dodecahedron' && <dodecahedronGeometry args={[1.2]} />}
-            {shape.geometry === 'tetrahedron' && <tetrahedronGeometry args={[1.5]} />}
+    <group ref={groupRef} position={[0, 1.5, -14]}>
+      {/* PYRAMIDES AVEC DÉTAILS */}
+      {pyramidTextures.map((lvl, idx) => (
+        <Float key={idx} speed={0.8 + idx * 0.35} floatIntensity={1} rotationIntensity={0.6}>
+          <group position={[0, lvl.y, 0]}>
+            {/* Pyramide principale */}
+            <mesh rotation={[0, Math.PI / 4, 0]} castShadow receiveShadow>
+              <coneGeometry args={[lvl.scale, lvl.scale * 1.2, 4, 6]} />
+              <meshPhysicalMaterial
+                color={lvl.color}
+                emissive={lvl.emissive}
+                emissiveIntensity={lvl.intensity}
+                metalness={lvl.metalness}
+                roughness={lvl.roughness}
+                clearcoat={1}
+                clearcoatRoughness={0.05}
+                envMapIntensity={2}
+                reflectivity={1}
+              />
+            </mesh>
+
+            {/* Wireframe */}
+            <mesh rotation={[0, Math.PI / 4, 0]}>
+              <coneGeometry args={[lvl.scale + 0.1, lvl.scale * 1.2, 4, 6]} />
+              <meshStandardMaterial
+                color="#fde68a"
+                emissive="#fde68a"
+                emissiveIntensity={3.5}
+                wireframe
+                transparent
+                opacity={0.8}
+              />
+            </mesh>
+
+            {/* Arêtes lumineuses */}
+            {[0, 1, 2, 3].map((edge) => (
+              <mesh key={edge} rotation={[0, (Math.PI / 2) * edge, 0]} position={[0, lvl.scale * 0.6, 0]}>
+                <boxGeometry args={[0.08, lvl.scale * 1.2, 0.08]} />
+                <meshStandardMaterial
+                  color="#fbbf24"
+                  emissive="#fde68a"
+                  emissiveIntensity={4}
+                  transparent
+                  opacity={0.9}
+                />
+              </mesh>
+            ))}
+
+            {/* Particules */}
+            {Array.from({ length: 8 }).map((_, i) => {
+              const angle = (i / 8) * Math.PI * 2
+              const radius = lvl.scale * 1.3
+              const x = Math.cos(angle) * radius
+              const z = Math.sin(angle) * radius
+              return (
+                <Float key={`particle-${i}`} speed={2 + i * 0.1} floatIntensity={0.5}>
+                  <mesh position={[x, 0, z]}>
+                    <sphereGeometry args={[0.12, 12, 12]} />
+                    <meshStandardMaterial
+                      color="#fbbf24"
+                      emissive="#fde68a"
+                      emissiveIntensity={3}
+                      transparent
+                      opacity={0.8}
+                    />
+                  </mesh>
+                </Float>
+              )
+            })}
+          </group>
+        </Float>
+      ))}
+
+      {/* ŒIL TOUT-VOYANT */}
+      <Float speed={1.2} floatIntensity={1.5} rotationIntensity={0.8}>
+        <group ref={eyeRef} position={[0, 5.5, 0]}>
+          {/* Base */}
+          <mesh castShadow>
+            <circleGeometry args={[1.5, 64]} />
+            <meshPhysicalMaterial
+              color="#0a0a0a"
+              emissive="#1e293b"
+              emissiveIntensity={1.2}
+              metalness={0.98}
+              roughness={0.05}
+              clearcoat={1}
+              clearcoatRoughness={0.02}
+            />
+          </mesh>
+
+          {/* Globe */}
+          <Sphere args={[1, 64, 64]} castShadow>
+            <MeshDistortMaterial
+              color="#ffffff"
+              emissive="#fbbf24"
+              emissiveIntensity={2.5}
+              metalness={0.99}
+              roughness={0.01}
+              distort={0.2}
+              speed={2}
+            />
+          </Sphere>
+
+          {/* Iris */}
+          <mesh position={[0, 0, 0.75]}>
+            <circleGeometry args={[0.55, 64]} />
             <meshStandardMaterial
-              color={shape.color}
-              emissive={shape.color}
-              emissiveIntensity={1.8}
-              wireframe
+              color="#06b6d4"
+              emissive="#22d3ee"
+              emissiveIntensity={4.5}
+              transparent
+              opacity={0.95}
+            />
+          </mesh>
+
+          {/* Pupille */}
+          <mesh position={[0, 0, 0.8]}>
+            <circleGeometry args={[0.24, 64]} />
+            <meshStandardMaterial color="#000000" />
+          </mesh>
+
+          {/* Reflet */}
+          <mesh position={[0.25, 0.2, 0.85]}>
+            <circleGeometry args={[0.15, 32]} />
+            <meshStandardMaterial
+              color="#ffffff"
+              emissive="#ffffff"
+              emissiveIntensity={5}
+              transparent
+              opacity={0.9}
+            />
+          </mesh>
+
+          {/* Rayons */}
+          {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+            <mesh key={i} rotation={[0, 0, (Math.PI / 4) * i]} position={[0, 0, -0.5]}>
+              <planeGeometry args={[0.22, 4.2]} />
+              <meshStandardMaterial
+                color="#fde68a"
+                emissive="#fde68a"
+                emissiveIntensity={4}
+                transparent
+                opacity={0.85}
+                side={THREE.DoubleSide}
+                blending={THREE.AdditiveBlending}
+              />
+            </mesh>
+          ))}
+
+          {/* Halo */}
+          <mesh>
+            <ringGeometry args={[1.6, 2, 64]} />
+            <meshStandardMaterial
+              color="#fbbf24"
+              emissive="#fde68a"
+              emissiveIntensity={3}
+              transparent
+              opacity={0.5}
+              side={THREE.DoubleSide}
+            />
+          </mesh>
+
+          {/* Symboles */}
+          {['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח'].map((symbol, i) => {
+            const angle = (i / 8) * Math.PI * 2
+            const radius = 2.5
+            const x = Math.cos(angle) * radius
+            const y = Math.sin(angle) * radius
+            return (
+              <Billboard key={i} position={[x, y, 0]}>
+                <Text
+                  fontSize={0.4}
+                  color="#fbbf24"
+                  outlineWidth={0.05}
+                  outlineColor="#000000"
+                  fontWeight={900}
+                >
+                  {symbol}
+                </Text>
+              </Billboard>
+            )
+          })}
+        </group>
+      </Float>
+
+      {/* ANNEAUX */}
+      <group ref={ringsRef}>
+        {[0, 1, 2, 3, 4, 5].map((i) => (
+          <Float key={i} speed={0.5 + i * 0.15} floatIntensity={0.3}>
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -6 + i * 0.5, 0]}>
+              <ringGeometry args={[7.5 + i * 2, 8 + i * 2, 64]} />
+              <meshStandardMaterial
+                color="#f59e0b"
+                emissive="#fbbf24"
+                emissiveIntensity={3 - i * 0.4}
+                transparent
+                opacity={0.7 - i * 0.1}
+                side={THREE.DoubleSide}
+              />
+            </mesh>
+            
+            {Array.from({ length: 12 }).map((_, j) => {
+              const angle = (j / 12) * Math.PI * 2
+              const radius = 7.75 + i * 2
+              const x = Math.cos(angle) * radius
+              const z = Math.sin(angle) * radius
+              return (
+                <Float key={`ring-sphere-${j}`} speed={1.5 + j * 0.1} floatIntensity={0.4}>
+                  <mesh position={[x, -6 + i * 0.5, z]}>
+                    <sphereGeometry args={[0.08, 12, 12]} />
+                    <meshStandardMaterial
+                      color="#fbbf24"
+                      emissive="#fde68a"
+                      emissiveIntensity={3}
+                    />
+                  </mesh>
+                </Float>
+              )
+            })}
+          </Float>
+        ))}
+      </group>
+
+      {/* PILIERS */}
+      {[0, 1, 2, 3].map((i) => (
+        <Float key={`pillar-${i}`} speed={1 + i * 0.2} floatIntensity={1.2}>
+          <mesh
+            position={[
+              Math.cos((i / 4) * Math.PI * 2) * 6,
+              0,
+              Math.sin((i / 4) * Math.PI * 2) * 6,
+            ]}
+          >
+            <cylinderGeometry args={[0.15, 0.15, 15, 24]} />
+            <meshStandardMaterial
+              color="#fbbf24"
+              emissive="#fde68a"
+              emissiveIntensity={3.5}
               transparent
               opacity={0.6}
             />
           </mesh>
         </Float>
       ))}
+
+      {/* GLYPHES */}
+      {['✡', '◬', '◭', '☯', '☿'].map((glyph, i) => {
+        const angle = (i / 5) * Math.PI * 2
+        const radius = 12
+        const height = Math.sin(i * 1.3) * 3
+        const x = Math.cos(angle) * radius
+        const y = height
+        const z = Math.sin(angle) * radius
+        return (
+          <Float key={`glyph-${i}`} speed={1.5 + i * 0.3} floatIntensity={1.5} rotationIntensity={0.8}>
+            <Billboard position={[x, y, z]}>
+              <Text
+                fontSize={1.2}
+                color="#fbbf24"
+                outlineWidth={0.1}
+                outlineColor="#000000"
+                fontWeight={900}
+              >
+                {glyph}
+              </Text>
+            </Billboard>
+          </Float>
+        )
+      })}
+
+      {/* PARTICULES ÉNERGIE */}
+      {Array.from({ length: 20 }).map((_, i) => {
+        const radius = 8 + Math.random() * 6
+        const angle = Math.random() * Math.PI * 2
+        const height = -4 + Math.random() * 12
+        const x = Math.cos(angle) * radius
+        const z = Math.sin(angle) * radius
+        return (
+          <Float key={`energy-${i}`} speed={2 + Math.random() * 2} floatIntensity={1.5}>
+            <mesh position={[x, height, z]}>
+              <sphereGeometry args={[0.1, 12, 12]} />
+              <meshStandardMaterial
+                color="#fbbf24"
+                emissive="#fde68a"
+                emissiveIntensity={4}
+                transparent
+                opacity={0.8}
+              />
+            </mesh>
+          </Float>
+        )
+      })}
+
+      {/* TITRE */}
+      <Billboard position={[0, 10, 0]}>
+        <Text
+          fontSize={1.3}
+          color="#fde68a"
+          outlineWidth={0.12}
+          outlineColor="#000000"
+          fontWeight={900}
+        >
+          ◬ PYRAMIDE DIVINE ◭
+        </Text>
+      </Billboard>
+
+      {/* SOUS-TITRE */}
+      <Billboard position={[0, 8.5, 0]}>
+        <Text
+          fontSize={0.5}
+          color="#fbbf24"
+          outlineWidth={0.05}
+          outlineColor="#000000"
+          fontWeight={700}
+        >
+          כתר · חכמה · בינה
+        </Text>
+      </Billboard>
     </group>
   )
 }
 
-// --- MYSTICAL FLOOR ---
-function MysticalFloor() {
-  return (
-    <>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -15, 0]}>
-        <circleGeometry args={[80, 128]} />
-        <meshStandardMaterial
-          color="#000000"
-          emissive="#8b5cf6"
-          emissiveIntensity={0.15}
-          transparent
-          opacity={0.3}
-        />
-      </mesh>
-      
-      {/* Sacred Circle Pattern */}
-      {[0, 1, 2, 3].map((i) => (
-        <mesh key={i} rotation={[-Math.PI / 2, 0, 0]} position={[0, -14.9, 0]}>
-          <ringGeometry args={[20 + i * 10, 20.5 + i * 10, 128]} />
-          <meshStandardMaterial
-            color="#8b5cf6"
-            emissive="#8b5cf6"
-            emissiveIntensity={2}
-            transparent
-            opacity={0.4 - i * 0.08}
-          />
-        </mesh>
-      ))}
-    </>
-  )
-}
-
-// --- MAIN COMPONENT ---
-export default function HomePage() {
-  const [activeSection, setActiveSection] = useState<string>('introduction')
-  const [scrollProgress, setScrollProgress] = useState(0)
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const scrollY = window.scrollY
-      const maxScroll = document.documentElement.scrollHeight - window.innerHeight
-      setScrollProgress((scrollY / maxScroll) * 100)
-    }
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
-
-  const sections = [
-    {
-      id: 'introduction',
-      icon: Book,
-      title: 'Introduction',
-      content: `Le KBL CENTER V2 représente l'évolution ultime d'une plateforme ésotérique moderne. Basée sur la structure sacrée de l'Arbre de Vie (Sephirot), cette architecture incarne la fusion entre la sagesse ancestrale kabbalistique et les technologies quantiques de nouvelle génération.
-
-Chaque Sephirah constitue un nœud de conscience, un dispositif fonctionnel qui matérialise un aspect spécifique de la connaissance universelle. Du Terminal de trading aux réseaux neuronaux d'IA, chaque module représente une facette de l'intelligence collective distribuée.`
-    },
-    {
-      id: 'vision',
-      icon: Eye,
-      title: 'Vision & Mission',
-      content: `Notre vision transcende le simple cadre technologique. Le KBL CENTER aspire à créer un nexus souverain où convergent finance décentralisée, intelligence artificielle, gouvernance DAO et création audiovisuelle.
-
-La mission est triple :
-• Démocratiser l'accès aux outils de trading algorithmique et d'analyse prédictive
-• Établir une communauté autonome guidée par la transparence et la décentralisation
-• Fusionner l'esthétique mystique avec l'innovation technologique de pointe`
-    },
-    {
-      id: 'architecture',
-      icon: Layers,
-      title: 'Architecture Sephirotique',
-      content: `L'Arbre de Sephirot structure l'ensemble du système en 10 sphères interconnectées :
-
-**KETHER** (Couronne) - HOME : Point d'origine, whitepaper et documentation fondamentale
-**CHOKMAH** (Sagesse) - TERMINAL : Trading algorithmique et données de marché temps réel
-**BINAH** (Compréhension) - IA : Réseaux neuronaux et modèles ML prédictifs
-**CHESED** (Miséricorde) - AUDIOVISUEL : Création média et visualisation de fréquences
-**GEBURAH** (Force) - COMMUNAUTÉS : Hub social et analytics d'engagement
-**TIPHERETH** (Beauté) - POLITIQUE : Gouvernance DAO et système de vote
-
-Chaque Sephirah communique via le store Zustand global, créant un réseau de conscience distribuée.`
-    },
-    {
-      id: 'technology',
-      icon: Hexagon,
-      title: 'Stack Technologique',
-      content: `**Frontend Quantum**
-• Next.js 16 (App Router) avec React 19.2 - Architecture SSR/SSG optimisée
-• TypeScript 5 - Sûreté de type stricte et IntelliSense avancé
-• Tailwind CSS 4.1 - Design system utility-first avec JIT compiler
-
-**Visualisation 3D & Animations**
-• Three.js 0.170 + React Three Fiber - Rendu WebGL haute performance
-• Framer Motion 12 - Animations déclaratives et transitions fluides
-• Post-processing N8AO - Ambient occlusion et effets visuels cinématiques
-
-**State Management & Data**
-• Zustand 4.4 - Store global minimaliste et performant
-• Axios - Client HTTP pour APIs externes (Binance, CoinGecko)
-• D3.js 7.9 - Manipulation et transformation de données complexes
-
-**Intelligence Artificielle**
-• Qwen 2.5 - LLM local pour analyse de marché
-• CryptoMamba - Modèle spécialisé crypto-prédictif
-• XGBoost - Algorithme de gradient boosting pour backtesting`
-    },
-    {
-      id: 'modules',
-      icon: Star,
-      title: 'Modules Principaux',
-      content: `**TERMINAL** - Centre de Contrôle Système
-Tableau de bord de trading avec intégration Binance API, graphiques en chandelier temps réel, order book depth, métriques de marché 24h, et terminal de commandes interactif.
-
-**IA** - Neural Networks Hub
-Visualisation de réseaux de neurones, gestion de modèles ML (Qwen, CryptoMamba, XGBoost), flux de signaux de trading, backtesting automatisé, et monitoring GPU/VRAM.
-
-**AUDIOVISUEL** - Centre Média Immersif
-Visualiseur de fréquences audio (waveform & spectrum), médiathèque interactive, lecteur avec contrôles avancés, pipeline de production (Recording → Editing → Publishing).
-
-**COMMUNAUTÉS** - Social Analytics Hub
-Métriques d'engagement (posts, commentaires, likes), leaderboard des contributeurs, radar de santé communautaire, flux d'activité temps réel, statistiques de croissance.
-
-**POLITIQUE** - Gouvernance Décentralisée
-Système de propositions et votes on-chain, visualisation de la trésorerie (Treasury), tracking du quorum et de la participation, historique complet des décisions DAO.`
-    },
-    {
-      id: 'philosophy',
-      icon: Infinity,
-      title: 'Philosophie Ésotérique',
-      content: `Le KBL CENTER ne se limite pas à une application web. Il incarne une philosophie de souveraineté numérique inspirée par les principes kabbalistiques :
-
-**L'Unité dans la Multiplicité** - Chaque module fonctionne de manière autonome tout en contribuant à l'harmonie globale du système.
-
-**La Lumière et le Voile** - L'interface utilisateur révèle progressivement ses mystères, guidant l'initié vers une compréhension profonde des mécanismes sous-jacents.
-
-**Les Chemins de Sagesse** - Les 22 sentiers reliant les Sephiroth représentent les transitions et animations entre modules, créant un voyage initiatique fluide.
-
-**La Couronne Suprême** - Le HOME module (Kether) représente la source de toute connaissance, le point d'origine d'où émane l'architecture complète.`
-    },
-    {
-      id: 'roadmap',
-      icon: Crown,
-      title: 'Roadmap Évolutive',
-      content: `**Phase 1 - Genesis (Achevée)**
-✓ Architecture Next.js 16 + TypeScript
-✓ Visualisation 3D Sephirot Tree avec shaders custom
-✓ Modules Terminal, IA, Audiovisuel, Communautés, Politique
-✓ State management Zustand global
-✓ Documentation complète et README professionnel
-
-**Phase 2 - Expansion (Q1 2026)**
-• Intégration WebSocket pour données de marché temps réel
-• Déploiement de smart contracts DAO sur Ethereum/Polygon
-• Système d'authentification Web3 (MetaMask, WalletConnect)
-• API backend Node.js + PostgreSQL pour persistence
-
-**Phase 3 - Quantum Leap (Q2-Q3 2026)**
-• Modèles ML en production avec endpoints GPU
-• Système de notifications push et alertes de trading
-• Fonctionnalités de backtesting avancées avec replay historique
-• Intégration de 4 Sephiroth supplémentaires (complétion de l'Arbre)
-
-**Phase 4 - Sovereign Nexus (Q4 2026)**
-• Infrastructure décentralisée IPFS + Filecoin
-• Token économique KBL pour gouvernance et incentivisation
-• Marketplace de stratégies de trading algorithmique
-• SDK open-source pour développeurs tiers`
-    },
-    {
-      id: 'conclusion',
-      icon: Scroll,
-      title: 'Conclusion',
-      content: `Le KBL CENTER V2 transcende les frontières entre spiritualité et technologie. Il ne s'agit pas simplement d'un projet web, mais d'une vision incarnée : celle d'un espace digital souverain où la connaissance ancestrale rencontre l'innovation quantique.
-
-Chaque ligne de code est imprégnée d'une intention : créer un système qui non seulement sert ses utilisateurs, mais les élève. Un système où la beauté esthétique renforce la fonctionnalité, où l'ésotérisme illumine la logique.
-
-Ce whitepaper marque le commencement d'un voyage initiatique. Que vous soyez trader, développeur, artiste ou chercheur de vérité, le KBL CENTER vous invite à participer à cette alchimie digitale.
-
-*Ad astra per aspera* - Vers les étoiles à travers les difficultés.
-
-**SAMIRneo**
-Architecte du Nexus Souverain
-Quantum Edition - 2025`
-    }
-  ]
-
-  const activeContent = sections.find(s => s.id === activeSection)
+// === COMPOSANT PRINCIPAL ===
+export default function HomeDevicePage() {
+  const [activePage, setActivePage] = useState(0)
+  const currentTablet = tablets[activePage]
 
   return (
-    <div className="relative w-full min-h-screen bg-black">
-      
-      {/* Progress Bar */}
-      <motion.div 
-        className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-600 via-blue-500 to-amber-500 z-50 origin-left"
-        style={{ scaleX: scrollProgress / 100 }}
-      />
-
-      {/* === 3D ANIMATION SECTION === */}
-      <div className="relative w-full h-[50vh] md:h-[60vh]">
-        <Canvas 
-          camera={{ position: [0, 0, 35], fov: 55 }}
-          style={{ width: '100%', height: '100%' }}
-          gl={{ antialias: true, alpha: false }}
+    <div className="relative w-full h-screen overflow-y-auto bg-black">
+      {/* 3D SCENE - CAMÉRA CENTRÉE */}
+      <div className="sticky top-0 left-0 w-full h-[45vh] z-0">
+        <Canvas
+          camera={{ 
+            position: [0, 3, 22], // Position centrée face à la pyramide
+            fov: 55, // Angle de vue optimal
+            near: 0.1,
+            far: 1000,
+          }}
+          gl={{
+            antialias: true,
+            powerPreference: 'high-performance',
+            alpha: false,
+            stencil: false,
+            depth: true,
+          }}
+          dpr={[1, 2]}
+          shadows
         >
-          <color attach="background" args={['#000000']} />
-          <fog attach="fog" args={['#000000', 35, 90]} />
+          <color attach="background" args={['#020202']} />
+          <fog attach="fog" args={['#020202', 45, 100]} />
 
-          <ambientLight intensity={0.3} />
-          <pointLight position={[10, 10, 10]} intensity={3} color="#8b5cf6" />
-          <pointLight position={[-10, -10, 10]} intensity={3} color="#3b82f6" />
-          <pointLight position={[0, 0, 15]} intensity={4} color="#f59e0b" />
-          <spotLight position={[0, 25, 0]} intensity={2.5} angle={0.4} penumbra={0.5} color="#fbbf24" />
+          <ambientLight intensity={0.5} />
+          <pointLight position={[18, 22, 14]} intensity={5.5} color="#fbbf24" castShadow shadow-mapSize={[1024, 1024]} />
+          <pointLight position={[-20, -12, 16]} intensity={4.5} color="#8b5cf6" />
+          <pointLight position={[0, 12, 25]} intensity={3.5} color="#38bdf8" />
+          <spotLight
+            position={[0, 35, 10]}
+            angle={0.6}
+            intensity={5}
+            penumbra={0.65}
+            color="#fde68a"
+            castShadow
+            shadow-mapSize={[1024, 1024]}
+          />
 
-          <Stars radius={180} depth={60} count={8000} factor={5} saturation={0.3} fade speed={0.4} />
-          
-          <SacredGeometryParticles />
-          <TreeOfLifeCore />
-          <FloatingGeometry />
-          <MysticalFloor />
+          <Environment preset="night" />
+          <Stars radius={220} depth={80} count={6000} factor={5} saturation={0.6} fade speed={0.2} />
+          <EsotericParticles />
+          <DivinePyramid />
 
-          <EffectComposer>
-            <Bloom intensity={1.8} luminanceThreshold={0.15} luminanceSmoothing={0.95} mipmapBlur />
-            <ChromaticAberration offset={[0.0015, 0.0015]} />
+          <EffectComposer multisampling={4}>
+            <Bloom 
+              intensity={2} 
+              luminanceThreshold={0.2} 
+              luminanceSmoothing={0.9} 
+              mipmapBlur 
+            />
+            <ChromaticAberration offset={[0.002, 0.002]} />
+            <Vignette offset={0.25} darkness={0.7} />
           </EffectComposer>
 
-          <OrbitControls 
-            enableDamping 
-            dampingFactor={0.05} 
-            autoRotate 
-            autoRotateSpeed={0.5}
-            maxDistance={55}
+          <OrbitControls
+            target={[0, 2, -14]} // Cible la pyramide (position Y ajustée)
+            enableDamping
+            dampingFactor={0.05}
+            autoRotate
+            autoRotateSpeed={0.25}
+            maxDistance={40}
             minDistance={18}
+            maxPolarAngle={Math.PI / 1.8}
+            minPolarAngle={Math.PI / 3}
             enablePan={false}
-            maxPolarAngle={Math.PI / 1.6}
-            minPolarAngle={Math.PI / 3.5}
+            makeDefault
           />
         </Canvas>
-
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black to-transparent pointer-events-none" />
       </div>
 
-      {/* === CONTENT SECTION === */}
-      <div className="relative w-full bg-black">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 pb-16">
-          
-          {/* Header */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-12 -mt-8"
-          >
-            <div className="inline-flex items-center gap-4 px-8 py-4 rounded-3xl bg-black/90 backdrop-blur-xl border-2 border-purple-500/50 shadow-[0_0_60px_rgba(139,92,246,0.3)]">
-              <HomeIcon className="w-10 h-10 text-purple-400" />
-              <div className="text-left">
-                <h1 className="text-5xl md:text-6xl font-black tracking-tighter">
-                  <span className="bg-gradient-to-r from-purple-400 via-blue-400 to-amber-400 bg-clip-text text-transparent">
-                    HOME
-                  </span>
-                </h1>
-                <p className="text-purple-400 font-mono text-sm tracking-[0.3em] uppercase mt-1">
-                  Whitepaper Sephirotique
-                </p>
+      {/* TABLETTES */}
+      <div className="relative z-10 w-full bg-black py-16">
+        <div className="max-w-5xl mx-auto px-6">
+          {/* HEADER */}
+          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
+            <div className="inline-flex flex-col items-center gap-4 px-12 py-7 rounded-3xl bg-gradient-to-b from-amber-950/95 to-slate-950/95 backdrop-blur-3xl border-4 border-amber-600/90 shadow-[0_0_100px_rgba(245,158,11,0.7)]">
+              <div className="flex items-center gap-8">
+                <Triangle className="w-8 h-8 text-amber-400 fill-amber-400/40 animate-pulse" />
+                <Eye className="w-12 h-12 text-amber-300 animate-pulse drop-shadow-[0_0_20px_rgba(245,158,11,1)]" />
+                <Triangle className="w-8 h-8 text-amber-400 fill-amber-400/40 animate-pulse" />
               </div>
+              <h1 className="text-4xl md:text-6xl font-black tracking-tight" style={{ fontFamily: 'Trajan Pro, Georgia, serif' }}>
+                <span className="bg-gradient-to-r from-amber-200 via-amber-400 to-yellow-300 bg-clip-text text-transparent drop-shadow-[0_6px_25px_rgba(245,158,11,1)]">
+                  ספר קבלה
+                </span>
+              </h1>
+              <p className="text-amber-400/95 text-sm tracking-[0.6em] uppercase" style={{ fontFamily: 'Cinzel, serif' }}>
+                Liber Kabbalae · Tablettes Divines
+              </p>
             </div>
           </motion.div>
 
-          {/* Main Layout */}
-          <div className="grid md:grid-cols-[300px_1fr] gap-6">
-            
-            {/* Sidebar Navigation */}
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-              className="sticky top-20 h-fit"
+          {/* TABLETTE */}
+          <motion.div initial={{ opacity: 0, y: 25 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+            <div
+              className="relative rounded-3xl p-3"
+              style={{
+                background: `linear-gradient(135deg, ${currentTablet.couleurPrimaire} 0%, ${currentTablet.couleurSecondaire} 50%, ${currentTablet.couleurPrimaire} 100%)`,
+                boxShadow: `0 0 150px ${currentTablet.couleurEmissive}, inset 0 0 100px rgba(0,0,0,0.7)`,
+              }}
             >
-              <div className="bg-black/90 backdrop-blur-2xl border-2 border-purple-900/50 rounded-3xl p-6 shadow-[0_0_60px_rgba(139,92,246,0.2)]">
-                <div className="flex items-center gap-3 mb-6 pb-4 border-b border-purple-900/50">
-                  <Layers className="w-6 h-6 text-purple-400" />
-                  <h3 className="text-xl font-bold text-white">Sommaire</h3>
-                </div>
-                
-                <nav className="space-y-2">
-                  {sections.map((section, i) => (
-                    <motion.button
-                      key={section.id}
-                      onClick={() => setActiveSection(section.id)}
-                      whileHover={{ x: 6, scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                        activeSection === section.id
-                          ? 'bg-gradient-to-r from-purple-600/40 to-blue-600/40 border-2 border-purple-500 shadow-[0_0_30px_rgba(139,92,246,0.4)]'
-                          : 'bg-purple-950/20 border-2 border-purple-900/30 hover:border-purple-500/50'
-                      }`}
-                    >
-                      <section.icon className={`w-5 h-5 flex-shrink-0 ${
-                        activeSection === section.id ? 'text-purple-300' : 'text-purple-500'
-                      }`} />
-                      <span className={`text-sm font-bold text-left ${
-                        activeSection === section.id ? 'text-white' : 'text-slate-400'
-                      }`}>
-                        {section.title}
-                      </span>
-                      {activeSection === section.id && (
-                        <ChevronRight className="w-4 h-4 ml-auto text-purple-300" />
-                      )}
-                    </motion.button>
-                  ))}
-                </nav>
-              </div>
-            </motion.div>
+              <div
+                className="rounded-2xl p-12 md:p-20 relative overflow-hidden"
+                style={{ background: 'linear-gradient(180deg, #1c1208 0%, #0a0604 100%)' }}
+              >
+                {/* TEXTURE */}
+                <div
+                  className="absolute inset-0 opacity-[0.12] mix-blend-overlay pointer-events-none"
+                  style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='300' height='300' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.5' numOctaves='6' /%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E")` }}
+                />
 
-            {/* Main Content */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              <AnimatePresence mode="wait">
-                {activeContent && (
-                  <motion.div
-                    key={activeSection}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.3 }}
-                    className="bg-black/90 backdrop-blur-2xl border-2 border-purple-900/50 rounded-3xl p-8 shadow-[0_0_60px_rgba(139,92,246,0.2)]"
+                {/* ORNEMENTS */}
+                {[
+                  { t: true, l: true },
+                  { t: true, r: true },
+                  { b: true, l: true },
+                  { b: true, r: true },
+                ].map((pos, i) => (
+                  <div
+                    key={i}
+                    className={`absolute ${pos.t ? 'top-4' : 'bottom-4'} ${pos.l ? 'left-4' : 'right-4'} w-20 h-20`}
                   >
-                    {/* Section Header */}
-                    <div className="flex items-center gap-4 mb-8 pb-6 border-b border-purple-900/50">
-                      <div className="p-4 rounded-2xl bg-gradient-to-br from-purple-600 to-blue-600 shadow-lg">
-                        <activeContent.icon className="w-8 h-8 text-white" />
-                      </div>
-                      <div>
-                        <h2 className="text-4xl font-black bg-gradient-to-r from-purple-400 via-blue-400 to-amber-400 bg-clip-text text-transparent">
-                          {activeContent.title}
-                        </h2>
-                        <p className="text-sm text-slate-500 font-mono mt-1">
-                          SECTION {sections.findIndex(s => s.id === activeSection) + 1} / {sections.length}
+                    <div
+                      className={`w-full h-full border-4 ${
+                        pos.t && pos.l
+                          ? 'border-b-0 border-r-0 rounded-tl-2xl'
+                          : pos.t && pos.r
+                          ? 'border-b-0 border-l-0 rounded-tr-2xl'
+                          : pos.b && pos.l
+                          ? 'border-t-0 border-r-0 rounded-bl-2xl'
+                          : 'border-t-0 border-l-0 rounded-br-2xl'
+                      }`}
+                      style={{ borderColor: currentTablet.couleurEmissive }}
+                    />
+                  </div>
+                ))}
+
+                {/* EN-TÊTE */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-14 pb-10 border-b-4"
+                  style={{ borderColor: `${currentTablet.couleurPrimaire}99` }}
+                >
+                  <div className="flex items-center justify-center gap-8 mb-8">
+                    <div
+                      className="h-px flex-1"
+                      style={{
+                        background: `linear-gradient(to right, transparent, ${currentTablet.couleurEmissive}cc, ${currentTablet.couleurEmissive})`,
+                      }}
+                    />
+                    <Eye
+                      className="w-14 h-14 animate-pulse"
+                      style={{
+                        color: currentTablet.couleurEmissive,
+                        filter: `drop-shadow(0 0 25px ${currentTablet.couleurEmissive})`,
+                      }}
+                    />
+                    <div
+                      className="h-px flex-1"
+                      style={{
+                        background: `linear-gradient(to left, transparent, ${currentTablet.couleurEmissive}cc, ${currentTablet.couleurEmissive})`,
+                      }}
+                    />
+                  </div>
+
+                  <div className="text-center space-y-5">
+                    <div
+                      className="inline-block px-10 py-5 rounded-full border-3"
+                      style={{
+                        background: `linear-gradient(to right, ${currentTablet.couleurPrimaire}80, ${currentTablet.couleurSecondaire}80)`,
+                        borderColor: `${currentTablet.couleurEmissive}aa`,
+                        boxShadow: `0 0 40px ${currentTablet.couleurEmissive}cc`,
+                      }}
+                    >
+                      <h2
+                        className="text-7xl md:text-9xl font-black"
+                        style={{
+                          color: currentTablet.couleurEmissive,
+                          fontFamily: 'David Libre, serif',
+                          textShadow: `0 6px 30px ${currentTablet.couleurEmissive}`,
+                        }}
+                      >
+                        {currentTablet.numero}
+                      </h2>
+                    </div>
+                    <h3
+                      className="text-3xl md:text-5xl font-bold tracking-wider leading-tight px-4"
+                      style={{
+                        color: `${currentTablet.couleurEmissive}f0`,
+                        fontFamily: 'Cinzel, Georgia, serif',
+                      }}
+                    >
+                      {currentTablet.titre}
+                    </h3>
+
+                    <div className="flex items-center justify-center gap-5 pt-5">
+                      <Scroll className="w-6 h-6 animate-pulse" style={{ color: currentTablet.couleurPrimaire }} />
+                      <div
+                        className="h-px w-32"
+                        style={{
+                          background: `linear-gradient(to right, transparent, ${currentTablet.couleurPrimaire}, transparent)`,
+                        }}
+                      />
+                      <Scroll className="w-6 h-6 animate-pulse" style={{ color: currentTablet.couleurPrimaire }} />
+                    </div>
+                  </div>
+                </motion.div>
+
+                {/* TEXTE */}
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={activePage}
+                    initial={{ opacity: 0, y: 35 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -35 }}
+                    transition={{ duration: 0.6 }}
+                    className="max-w-4xl mx-auto"
+                  >
+                    <div
+                      className="text-amber-100/95 leading-[2.5] text-justify space-y-10 text-lg md:text-xl"
+                      style={{ fontFamily: 'Garamond, Baskerville, Georgia, serif', textShadow: '0 3px 6px rgba(0,0,0,0.7)' }}
+                    >
+                      {currentTablet.contenu.split('\n\n').map((para, i) => (
+                        <p
+                          key={i}
+                          className="first-letter:text-8xl first-letter:font-black first-letter:mr-4 first-letter:float-left first-letter:leading-[0.7]"
+                        >
+                          <span
+                            style={
+                              i === 0
+                                ? {
+                                    color: currentTablet.couleurEmissive,
+                                    filter: `drop-shadow(0 4px 15px ${currentTablet.couleurEmissive})`,
+                                  }
+                                : {}
+                            }
+                          >
+                            {para}
+                          </span>
                         </p>
-                      </div>
-                    </div>
-
-                    {/* Section Content */}
-                    <div className="prose prose-invert max-w-none">
-                      <div className="text-slate-300 leading-relaxed space-y-6 text-base whitespace-pre-line">
-                        {activeContent.content}
-                      </div>
-                    </div>
-
-                    {/* Navigation Arrows */}
-                    <div className="flex justify-between mt-12 pt-6 border-t border-purple-900/50">
-                      <button
-                        onClick={() => {
-                          const currentIndex = sections.findIndex(s => s.id === activeSection)
-                          if (currentIndex > 0) setActiveSection(sections[currentIndex - 1].id)
-                        }}
-                        disabled={sections.findIndex(s => s.id === activeSection) === 0}
-                        className="px-6 py-3 rounded-xl bg-purple-950/40 border-2 border-purple-900/50 hover:border-purple-500 disabled:opacity-30 disabled:cursor-not-allowed text-white font-bold transition-all flex items-center gap-2"
-                      >
-                        <ChevronRight className="w-5 h-5 rotate-180" />
-                        Précédent
-                      </button>
-                      <button
-                        onClick={() => {
-                          const currentIndex = sections.findIndex(s => s.id === activeSection)
-                          if (currentIndex < sections.length - 1) setActiveSection(sections[currentIndex + 1].id)
-                        }}
-                        disabled={sections.findIndex(s => s.id === activeSection) === sections.length - 1}
-                        className="px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 disabled:opacity-30 disabled:cursor-not-allowed text-white font-bold transition-all flex items-center gap-2 shadow-[0_0_30px_rgba(139,92,246,0.4)]"
-                      >
-                        Suivant
-                        <ChevronRight className="w-5 h-5" />
-                      </button>
+                      ))}
                     </div>
                   </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
+                </AnimatePresence>
 
-          </div>
+                {/* NAVIGATION */}
+                <div className="mt-20 pt-12 border-t-4" style={{ borderColor: `${currentTablet.couleurPrimaire}99` }}>
+                  <div className="flex items-center justify-between gap-8 max-w-4xl mx-auto">
+                    <motion.button
+                      whileHover={{ scale: 1.1, x: -10 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => setActivePage((p) => Math.max(0, p - 1))}
+                      disabled={activePage === 0}
+                      className="flex items-center gap-4 px-8 py-5 rounded-2xl disabled:opacity-15 disabled:cursor-not-allowed text-white font-bold transition-all border-3"
+                      style={{
+                        background: `linear-gradient(to right, ${currentTablet.couleurPrimaire}, ${currentTablet.couleurSecondaire})`,
+                        borderColor: `${currentTablet.couleurEmissive}cc`,
+                        boxShadow: `0 0 40px ${currentTablet.couleurEmissive}cc`,
+                      }}
+                    >
+                      <ChevronLeft className="w-7 h-7" />
+                      <span className="hidden sm:inline text-base tracking-wider">קודם</span>
+                    </motion.button>
 
+                    <div className="flex items-center gap-4">
+                      {tablets.map((_, i) => (
+                        <motion.button
+                          key={i}
+                          whileHover={{ scale: 1.4 }}
+                          whileTap={{ scale: 0.8 }}
+                          onClick={() => setActivePage(i)}
+                          className={`transition-all rounded-full ${i === activePage ? 'w-12 h-5' : 'w-5 h-5'}`}
+                          style={{
+                            backgroundColor: i === activePage ? currentTablet.couleurEmissive : `${currentTablet.couleurPrimaire}aa`,
+                            boxShadow:
+                              i === activePage
+                                ? `0 0 25px ${currentTablet.couleurEmissive}`
+                                : `0 0 12px ${currentTablet.couleurPrimaire}99`,
+                          }}
+                        />
+                      ))}
+                    </div>
+
+                    <motion.button
+                      whileHover={{ scale: 1.1, x: 10 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => setActivePage((p) => Math.min(tablets.length - 1, p + 1))}
+                      disabled={activePage === tablets.length - 1}
+                      className="flex items-center gap-4 px-8 py-5 rounded-2xl disabled:opacity-15 disabled:cursor-not-allowed text-white font-bold transition-all border-3"
+                      style={{
+                        background: `linear-gradient(to right, ${currentTablet.couleurPrimaire}, ${currentTablet.couleurSecondaire})`,
+                        borderColor: `${currentTablet.couleurEmissive}cc`,
+                        boxShadow: `0 0 40px ${currentTablet.couleurEmissive}cc`,
+                      }}
+                    >
+                      <span className="hidden sm:inline text-base tracking-wider">הבא</span>
+                      <ChevronRight className="w-7 h-7" />
+                    </motion.button>
+                  </div>
+
+                  {/* SIGNATURE */}
+                  <div className="flex items-center justify-center gap-5 mt-12">
+                    <Scroll className="w-7 h-7 animate-pulse" style={{ color: currentTablet.couleurEmissive }} />
+                    <p
+                      className="text-sm tracking-[0.5em] uppercase"
+                      style={{ color: `${currentTablet.couleurPrimaire}e0`, fontFamily: 'Cinzel, serif' }}
+                    >
+                      KBL · MMXXV · {currentTablet.numero}
+                    </p>
+                    <Scroll className="w-7 h-7 animate-pulse" style={{ color: currentTablet.couleurEmissive }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
         </div>
       </div>
-
-      <style jsx global>{`
-        .prose h3 { 
-          @apply text-2xl font-bold text-purple-300 mt-8 mb-4; 
-        }
-        .prose strong { 
-          @apply text-blue-400 font-bold; 
-        }
-        .prose ul { 
-          @apply space-y-2 ml-6; 
-        }
-        .prose li::marker { 
-          @apply text-purple-400; 
-        }
-      `}</style>
     </div>
   )
 }
