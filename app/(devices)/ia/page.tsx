@@ -1,514 +1,451 @@
 ﻿'use client'
 
 import { Canvas, useFrame } from '@react-three/fiber'
-import { OrbitControls, Stars, Float, MeshDistortMaterial, Sphere, Text, Billboard, Torus } from '@react-three/drei'
-import { EffectComposer, Bloom, ChromaticAberration } from '@react-three/postprocessing'
+import { OrbitControls, Float, Environment, Sphere } from '@react-three/drei'
+import { EffectComposer, Bloom, DepthOfField } from '@react-three/postprocessing'
 import * as THREE from 'three'
-import { useRef, useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Brain, Sparkles, Zap, MessageSquare, Image, Code, Mic, Eye, TrendingUp, Activity, Send, Copy, Download } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { motion } from 'framer-motion'
+import { Brain, Sparkles, Send, Code2, Settings, ChevronRight, Zap } from 'lucide-react'
 
-// --- NEURAL NETWORK VISUALIZATION ---
-function NeuralNetwork() {
+// ═══════════════════════════════════════════════════════════
+// PARTIE 1 : MAINS DE MICHEL-ANGE TECH (HAUT - 50vh)
+// ═══════════════════════════════════════════════════════════
+
+// Main gauche (Humain)
+function LeftHand() {
   const groupRef = useRef<THREE.Group>(null!)
-  const [nodes] = useState(() => {
-    const n = []
-    for (let layer = 0; layer < 4; layer++) {
-      for (let i = 0; i < 6; i++) {
-        n.push({
-          pos: new THREE.Vector3(
-            (layer - 1.5) * 6,
-            (i - 2.5) * 2,
-            Math.random() * 4 - 2
-          ),
-          layer
-        })
-      }
-    }
-    return n
-  })
 
   useFrame((state) => {
-    if (groupRef.current) {
-      groupRef.current.rotation.y += 0.002
-      groupRef.current.position.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.5
-    }
+    if (!groupRef.current) return
+    const t = state.clock.elapsedTime
+    groupRef.current.position.x = -5 + Math.sin(t * 0.5) * 0.3
   })
 
   return (
-    <group ref={groupRef} position={[0, 0, -15]}>
-      {/* Nodes */}
-      {nodes.map((node, i) => (
-        <Float key={i} speed={1.5} rotationIntensity={0.2} floatIntensity={0.5}>
-          <Sphere args={[0.3, 16, 16]} position={node.pos}>
-            <meshStandardMaterial
-              color="#38bdf8"
-              emissive="#38bdf8"
-              emissiveIntensity={2 + Math.sin(i) * 0.5}
-              roughness={0}
-              metalness={1}
-            />
-          </Sphere>
-        </Float>
-      ))}
-
-      {/* Connections */}
-      {nodes.map((node, i) => {
-        if (node.layer < 3) {
-          const nextLayerNodes = nodes.filter(n => n.layer === node.layer + 1)
-          return nextLayerNodes.map((target, j) => (
-            <line key={`${i}-${j}`}>
-              <bufferGeometry>
-                <bufferAttribute
-                  attach="attributes-position"
-                  args={[new Float32Array([...node.pos.toArray(), ...target.pos.toArray()]), 3]}
-                  count={2}
-                />
-              </bufferGeometry>
-              <lineBasicMaterial color="#38bdf8" transparent opacity={0.2} />
-            </line>
-          ))
-        }
-        return null
-      })}
-
-      {/* Central Core */}
-      <Sphere args={[2, 64, 64]} position={[0, 0, 0]}>
-        <MeshDistortMaterial
-          color="#38bdf8"
-          emissive="#0ea5e9"
-          emissiveIntensity={2}
-          distort={0.4}
-          speed={2}
-          roughness={0}
-          metalness={1}
-          transparent
-          opacity={0.7}
-        />
-      </Sphere>
-
-      <Billboard position={[0, 4, 0]}>
-        <Text
-          fontSize={0.7}
-          color="#38bdf8"
-          anchorX="center"
-          anchorY="middle"
-          outlineWidth={0.05}
-          outlineColor="#000000"
-          fontWeight={900}
-        >
-          NEURAL CORTEX
-        </Text>
-      </Billboard>
-    </group>
-  )
-}
-
-// --- DATA STREAMS ---
-function DataStreams() {
-  const groupRef = useRef<THREE.Group>(null!)
-  const streamsCount = 30
-  
-  useFrame((state, delta) => {
-    if (groupRef.current) {
-      groupRef.current.children.forEach((child, i) => {
-        child.position.y -= delta * (2 + i * 0.1)
-        if (child.position.y < -30) child.position.y = 30
-      })
-    }
-  })
-
-  return (
-    <group ref={groupRef}>
-      {Array.from({ length: streamsCount }).map((_, i) => (
-        <Torus
-          key={i}
-          args={[0.5, 0.1, 16, 32]}
-          position={[
-            (Math.random() - 0.5) * 30,
-            Math.random() * 60 - 30,
-            (Math.random() - 0.5) * 30
-          ]}
-          rotation={[Math.PI / 2, 0, 0]}
-        >
+    <Float speed={1.5} floatIntensity={0.5}>
+      <group ref={groupRef} position={[-5, 0, 0]} rotation={[0, 0.3, 0]}>
+        {/* Paume */}
+        <mesh>
+          <boxGeometry args={[2, 3, 0.5]} />
           <meshStandardMaterial
-            color="#38bdf8"
-            emissive="#38bdf8"
-            emissiveIntensity={2}
-            transparent
-            opacity={0.6}
+            color="#8b7355"
+            metalness={0.3}
+            roughness={0.7}
           />
-        </Torus>
+        </mesh>
+
+        {/* Index pointé */}
+        <group position={[0.5, 1.5, 0]}>
+          <mesh position={[0.3, 0.8, 0]}>
+            <cylinderGeometry args={[0.2, 0.2, 1.6, 16]} />
+            <meshStandardMaterial
+              color="#8b7355"
+              metalness={0.3}
+              roughness={0.7}
+            />
+          </mesh>
+          {/* Bout du doigt */}
+          <mesh position={[0.3, 1.7, 0]}>
+            <sphereGeometry args={[0.25, 16, 16]} />
+            <meshStandardMaterial
+              color="#8b7355"
+              emissive="#ff8844"
+              emissiveIntensity={0.5}
+            />
+          </mesh>
+        </group>
+
+        {/* Particules organiques */}
+        {Array.from({ length: 8 }).map((_, i) => {
+          const angle = (i / 8) * Math.PI * 2
+          const radius = 3
+          return (
+            <Float key={i} speed={2} floatIntensity={1}>
+              <mesh position={[Math.cos(angle) * radius, Math.sin(angle) * radius, 0]}>
+                <sphereGeometry args={[0.15, 16, 16]} />
+                <meshStandardMaterial
+                  color="#ff8844"
+                  emissive="#ff8844"
+                  emissiveIntensity={2}
+                />
+              </mesh>
+            </Float>
+          )
+        })}
+      </group>
+    </Float>
+  )
+}
+
+// Main droite (IA)
+function RightHand() {
+  const groupRef = useRef<THREE.Group>(null!)
+
+  useFrame((state) => {
+    if (!groupRef.current) return
+    const t = state.clock.elapsedTime
+    groupRef.current.position.x = 5 - Math.sin(t * 0.5) * 0.3
+  })
+
+  return (
+    <Float speed={1.5} floatIntensity={0.5}>
+      <group ref={groupRef} position={[5, 0, 0]} rotation={[0, -0.3, 0]}>
+        {/* Paume tech */}
+        <mesh>
+          <boxGeometry args={[2, 3, 0.5]} />
+          <meshStandardMaterial
+            color="#00ff88"
+            emissive="#00ff88"
+            emissiveIntensity={1}
+            metalness={0.9}
+            roughness={0.1}
+          />
+        </mesh>
+
+        {/* Index pointé tech */}
+        <group position={[-0.5, 1.5, 0]}>
+          <mesh position={[-0.3, 0.8, 0]}>
+            <cylinderGeometry args={[0.2, 0.2, 1.6, 16]} />
+            <meshStandardMaterial
+              color="#00ff88"
+              emissive="#00ff88"
+              emissiveIntensity={1.5}
+              metalness={0.9}
+              roughness={0.1}
+            />
+          </mesh>
+          {/* Bout du doigt brillant */}
+          <mesh position={[-0.3, 1.7, 0]}>
+            <sphereGeometry args={[0.25, 16, 16]} />
+            <meshStandardMaterial
+              color="#00ffff"
+              emissive="#00ffff"
+              emissiveIntensity={3}
+            />
+          </mesh>
+        </group>
+
+        {/* Circuit imprimé sur la main */}
+        {Array.from({ length: 6 }).map((_, i) => (
+          <mesh key={i} position={[0, -1 + i * 0.5, 0.3]}>
+            <boxGeometry args={[1.8, 0.05, 0.05]} />
+            <meshStandardMaterial
+              color="#00ffff"
+              emissive="#00ffff"
+              emissiveIntensity={2}
+            />
+          </mesh>
+        ))}
+
+        {/* Particules tech */}
+        {Array.from({ length: 8 }).map((_, i) => {
+          const angle = (i / 8) * Math.PI * 2
+          const radius = 3
+          return (
+            <Float key={i} speed={2} floatIntensity={1}>
+              <mesh position={[Math.cos(angle) * radius, Math.sin(angle) * radius, 0]}>
+                <octahedronGeometry args={[0.2, 0]} />
+                <meshStandardMaterial
+                  color="#00ffff"
+                  emissive="#00ffff"
+                  emissiveIntensity={3}
+                />
+              </mesh>
+            </Float>
+          )
+        })}
+      </group>
+    </Float>
+  )
+}
+
+// Étincelle au centre
+function Spark() {
+  const sparkRef = useRef<THREE.Mesh>(null!)
+
+  useFrame((state) => {
+    if (!sparkRef.current) return
+    const t = state.clock.elapsedTime
+    sparkRef.current.scale.setScalar(1 + Math.sin(t * 3) * 0.3)
+  })
+
+  return (
+    <mesh ref={sparkRef}>
+      <sphereGeometry args={[0.5, 32, 32]} />
+      <meshStandardMaterial
+        color="#ffffff"
+        emissive="#ffffff"
+        emissiveIntensity={5}
+      />
+    </mesh>
+  )
+}
+
+// Grille tech de fond
+function TechGrid() {
+  return (
+    <group>
+      {Array.from({ length: 20 }).map((_, i) => (
+        <mesh key={`h-${i}`} position={[0, -10 + i, -20]}>
+          <boxGeometry args={[40, 0.05, 0.05]} />
+          <meshStandardMaterial
+            color="#00ff88"
+            emissive="#00ff88"
+            emissiveIntensity={0.5}
+            transparent
+            opacity={0.3}
+          />
+        </mesh>
+      ))}
+      {Array.from({ length: 20 }).map((_, i) => (
+        <mesh key={`v-${i}`} position={[-10 + i, 0, -20]}>
+          <boxGeometry args={[0.05, 40, 0.05]} />
+          <meshStandardMaterial
+            color="#00ff88"
+            emissive="#00ff88"
+            emissiveIntensity={0.5}
+            transparent
+            opacity={0.3}
+          />
+        </mesh>
       ))}
     </group>
   )
 }
 
-// --- MAIN COMPONENT ---
-export default function IAPage() {
+// ═══════════════════════════════════════════════════════════
+// PARTIE 2 : INTERFACE IA (BAS - 50vh)
+// ═══════════════════════════════════════════════════════════
+
+function IAInterface() {
+  const [selectedModel, setSelectedModel] = useState('gpt-4')
   const [messages, setMessages] = useState([
-    { role: 'assistant', content: 'Bonjour ! Je suis l\'IA de KBL Center. Comment puis-je vous aider aujourd\'hui ?', timestamp: new Date() }
+    { role: 'assistant', content: 'Hello! How can I help you today?' },
   ])
   const [input, setInput] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [selectedModel, setSelectedModel] = useState('gpt-4')
-  const [stats, setStats] = useState({
-    tokensUsed: 1247,
-    responsesGenerated: 342,
-    accuracy: 97.8,
-    avgResponseTime: '1.2s'
-  })
 
   const models = [
-    { id: 'gpt-4', name: 'GPT-4 Turbo', speed: '95%', accuracy: '98%', icon: Brain },
-    { id: 'claude', name: 'Claude 3.5', speed: '92%', accuracy: '97%', icon: Sparkles },
-    { id: 'gemini', name: 'Gemini Pro', speed: '90%', accuracy: '95%', icon: Zap },
+    { id: 'gpt-4', name: 'GPT-4', type: 'Private API', icon: '🔒' },
+    { id: 'claude', name: 'Claude 3', type: 'Private API', icon: '🔒' },
+    { id: 'qwen', name: 'Qwen 2.5', type: 'Open Source', icon: '🌐' },
+    { id: 'llama', name: 'Llama 3', type: 'Open Source', icon: '🌐' },
+    { id: 'mistral', name: 'Mistral', type: 'Open Source', icon: '🌐' },
   ]
 
-  const features = [
-    { icon: MessageSquare, label: 'Chat', active: true, color: '#38bdf8' },
-    { icon: Image, label: 'Vision', active: false, color: '#8b5cf6' },
-    { icon: Code, label: 'Code', active: false, color: '#10b981' },
-    { icon: Mic, label: 'Audio', active: false, color: '#f59e0b' },
+  const scripts = [
+    { name: 'Hermetic Trading', desc: 'Alchemical market analysis', icon: '⚗️' },
+    { name: 'Kabbalistic Predictor', desc: 'Sephirotic pattern recognition', icon: '🔯' },
+    { name: 'Quantum Signals', desc: 'Entangled price movements', icon: '⚛️' },
+    { name: 'Sacred Geometry', desc: 'Fibonacci + Golden ratio', icon: '📐' },
   ]
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setStats(prev => ({
-        ...prev,
-        tokensUsed: prev.tokensUsed + Math.floor(Math.random() * 10),
-        responsesGenerated: prev.responsesGenerated + (Math.random() > 0.7 ? 1 : 0),
-      }))
-    }, 3000)
-    return () => clearInterval(interval)
-  }, [])
-
-  const handleSend = async () => {
-    if (!input.trim()) return
-    
-    const userMessage = { role: 'user', content: input, timestamp: new Date() }
-    setMessages([...messages, userMessage])
-    setInput('')
-    setIsLoading(true)
-
-    // Simulate AI response
-    setTimeout(() => {
-      const responses = [
-        "Je comprends votre question. Voici une analyse détaillée basée sur les dernières données disponibles...",
-        "Excellente question ! Laissez-moi vous expliquer avec des exemples concrets...",
-        "D'après mes calculs et l'analyse des données, voici ce que je peux vous recommander...",
-        "Intéressant ! Voici plusieurs perspectives à considérer pour votre situation..."
-      ]
-      const aiMessage = {
-        role: 'assistant',
-        content: responses[Math.floor(Math.random() * responses.length)],
-        timestamp: new Date()
-      }
-      setMessages(prev => [...prev, aiMessage])
-      setIsLoading(false)
-    }, 1500)
+  const handleSend = () => {
+    if (input.trim()) {
+      setMessages([...messages, { role: 'user', content: input }])
+      setInput('')
+      // Simuler une réponse
+      setTimeout(() => {
+        setMessages((prev) => [
+          ...prev,
+          { role: 'assistant', content: 'Processing your request...' },
+        ])
+      }, 500)
+    }
   }
 
   return (
-    <div className="relative w-full min-h-screen bg-black">
-      
-      {/* === 3D ANIMATION SECTION === */}
-      <div className="relative w-full h-[55vh]">
-        <Canvas 
-          camera={{ position: [0, 0, 35], fov: 60 }}
-          style={{ width: '100%', height: '100%' }}
-          gl={{ antialias: true, alpha: false }}
-        >
-          <color attach="background" args={['#000000']} />
-          <fog attach="fog" args={['#000000', 40, 120]} />
+    <div className="w-full h-full flex gap-4">
+      {/* SIDEBAR GAUCHE : Choix modèle */}
+      <div className="w-80 bg-[#0d0d0d] rounded-xl border-2 border-cyan-500/30 p-6 overflow-y-auto">
+        <div className="flex items-center gap-3 mb-6">
+          <Brain className="w-6 h-6 text-cyan-400" />
+          <h2 className="text-cyan-400 font-mono font-bold text-lg">AI Models</h2>
+        </div>
 
-          <ambientLight intensity={0.4} />
-          <pointLight position={[15, 15, 15]} intensity={3} color="#38bdf8" />
-          <pointLight position={[-15, -15, 15]} intensity={2} color="#0ea5e9" />
-          <spotLight position={[0, 30, 0]} intensity={2.5} angle={0.5} penumbra={0.5} color="#38bdf8" />
-
-          <Stars radius={250} depth={100} count={12000} factor={7} saturation={0} fade speed={0.6} />
-          
-          <NeuralNetwork />
-          <DataStreams />
-
-          <EffectComposer>
-            <Bloom intensity={1.5} luminanceThreshold={0.2} luminanceSmoothing={0.9} mipmapBlur />
-            <ChromaticAberration offset={[0.002, 0.002]} />
-          </EffectComposer>
-
-          <OrbitControls 
-            enableDamping 
-            dampingFactor={0.05} 
-            autoRotate 
-            autoRotateSpeed={0.4}
-            maxDistance={60}
-            minDistance={20}
-            enablePan={false}
-          />
-        </Canvas>
-
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent pointer-events-none" />
-      </div>
-
-      {/* === CONTENT SECTION === */}
-      <div className="relative w-full bg-black">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 pb-16">
-          
-          {/* Header */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-10 -mt-8"
-          >
-            <div className="inline-flex items-center gap-4 px-8 py-4 rounded-3xl bg-black/90 backdrop-blur-xl border-2 border-cyan-500/50 shadow-[0_0_60px_rgba(56,189,248,0.4)]">
-              <Brain className="w-10 h-10 text-cyan-400" />
-              <div className="text-left">
-                <h1 className="text-5xl md:text-6xl font-black tracking-tighter">
-                  <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-500 bg-clip-text text-transparent">
-                    INTELLIGENCE
-                  </span>
-                </h1>
-                <p className="text-cyan-400 font-mono text-sm tracking-[0.3em] uppercase mt-1">
-                  Artificial Neural Center
-                </p>
+        <div className="space-y-3">
+          {models.map((model) => (
+            <motion.button
+              key={model.id}
+              onClick={() => setSelectedModel(model.id)}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className={`w-full p-4 rounded-lg border transition-all ${
+                selectedModel === model.id
+                  ? 'bg-cyan-500/20 border-cyan-500 shadow-[0_0_20px_rgba(0,255,255,0.3)]'
+                  : 'bg-cyan-900/10 border-cyan-500/30 hover:border-cyan-500/50'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-cyan-400 font-mono font-bold text-sm">
+                  {model.icon} {model.name}
+                </span>
+                {selectedModel === model.id && (
+                  <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse" />
+                )}
               </div>
+              <span className="text-cyan-600 text-xs font-mono">{model.type}</span>
+            </motion.button>
+          ))}
+        </div>
+
+        <div className="mt-8 p-4 bg-cyan-900/10 rounded-lg border border-cyan-500/30">
+          <div className="text-cyan-400 text-xs font-mono mb-2">USAGE</div>
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs font-mono">
+              <span className="text-cyan-600">Tokens:</span>
+              <span className="text-cyan-400">12.4K / 100K</span>
             </div>
-          </motion.div>
-
-          {/* Stats Grid */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
-          >
-            {[
-              { label: 'Tokens Used', value: stats.tokensUsed.toLocaleString(), icon: Activity, color: '#38bdf8' },
-              { label: 'Responses', value: stats.responsesGenerated, icon: MessageSquare, color: '#0ea5e9' },
-              { label: 'Accuracy', value: `${stats.accuracy}%`, icon: TrendingUp, color: '#06b6d4' },
-              { label: 'Avg Time', value: stats.avgResponseTime, icon: Zap, color: '#0891b2' },
-            ].map((stat, i) => (
-              <motion.div
-                key={i}
-                whileHover={{ scale: 1.05, y: -8 }}
-                className="relative group"
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl blur-xl" />
-                <div className="relative p-6 rounded-2xl bg-black/90 backdrop-blur-xl border-2 border-cyan-800/50 group-hover:border-cyan-500 transition-all">
-                  <stat.icon className="w-6 h-6 mb-3" style={{ color: stat.color }} />
-                  <p className="text-xs text-slate-500 font-mono mb-1">{stat.label}</p>
-                  <p className="text-3xl font-black" style={{ color: stat.color }}>{stat.value}</p>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-
-          {/* Model Selector */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="flex gap-3 mb-8 overflow-x-auto pb-2"
-          >
-            {models.map((model) => (
-              <button
-                key={model.id}
-                onClick={() => setSelectedModel(model.id)}
-                className={`flex items-center gap-3 px-6 py-4 rounded-2xl font-bold transition-all whitespace-nowrap ${
-                  selectedModel === model.id
-                    ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-[0_0_40px_rgba(56,189,248,0.5)] scale-105'
-                    : 'bg-cyan-950/30 text-cyan-400 hover:bg-cyan-900/50 border-2 border-cyan-800/50'
-                }`}
-              >
-                <model.icon className="w-6 h-6" />
-                <div className="text-left">
-                  <p className="text-sm font-black">{model.name}</p>
-                  <p className="text-xs opacity-70">Speed: {model.speed} • Accuracy: {model.accuracy}</p>
-                </div>
-              </button>
-            ))}
-          </motion.div>
-
-          {/* Main Chat Interface */}
-          <div className="grid md:grid-cols-3 gap-6">
-            
-            {/* Chat Area */}
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 }}
-              className="md:col-span-2 bg-black/90 backdrop-blur-2xl border-2 border-cyan-800/50 rounded-3xl p-6 shadow-[0_0_60px_rgba(56,189,248,0.2)]"
-            >
-              <div className="flex items-center justify-between mb-6 pb-4 border-b border-cyan-800/50">
-                <div className="flex items-center gap-3">
-                  <MessageSquare className="w-6 h-6 text-cyan-400" />
-                  <h3 className="text-xl font-bold text-white">Neural Conversation</h3>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse shadow-[0_0_10px_rgba(56,189,248,0.8)]" />
-                  <span className="text-xs text-cyan-400 font-mono">ACTIVE</span>
-                </div>
-              </div>
-
-              {/* Messages */}
-              <div className="h-[400px] overflow-y-auto mb-4 space-y-4 custom-scrollbar">
-                <AnimatePresence>
-                  {messages.map((msg, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0 }}
-                      className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div className={`max-w-[80%] p-4 rounded-2xl ${
-                        msg.role === 'user'
-                          ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white'
-                          : 'bg-cyan-950/40 border-2 border-cyan-800/50 text-white'
-                      }`}>
-                        <div className="flex items-center gap-2 mb-2">
-                          {msg.role === 'assistant' && <Brain className="w-4 h-4 text-cyan-400" />}
-                          <span className="text-xs font-mono opacity-70">
-                            {msg.timestamp.toLocaleTimeString()}
-                          </span>
-                        </div>
-                        <p className="text-sm leading-relaxed">{msg.content}</p>
-                        {msg.role === 'assistant' && (
-                          <div className="flex gap-2 mt-3 pt-3 border-t border-cyan-800/30">
-                            <button className="p-2 rounded-lg bg-cyan-900/30 hover:bg-cyan-800/50 transition-all">
-                              <Copy className="w-4 h-4 text-cyan-400" />
-                            </button>
-                            <button className="p-2 rounded-lg bg-cyan-900/30 hover:bg-cyan-800/50 transition-all">
-                              <Download className="w-4 h-4 text-cyan-400" />
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  ))}
-                  {isLoading && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="flex justify-start"
-                    >
-                      <div className="bg-cyan-950/40 border-2 border-cyan-800/50 p-4 rounded-2xl">
-                        <div className="flex gap-2">
-                          <div className="w-2 h-2 rounded-full bg-cyan-500 animate-bounce" />
-                          <div className="w-2 h-2 rounded-full bg-cyan-500 animate-bounce" style={{ animationDelay: '0.2s' }} />
-                          <div className="w-2 h-2 rounded-full bg-cyan-500 animate-bounce" style={{ animationDelay: '0.4s' }} />
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {/* Input Area */}
-              <div className="flex gap-3">
-                <input
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                  placeholder="Posez votre question à l'IA..."
-                  className="flex-1 px-6 py-4 rounded-xl bg-cyan-950/30 border-2 border-cyan-800/50 focus:border-cyan-500 text-white placeholder-cyan-700 outline-none transition-all"
-                />
-                <button
-                  onClick={handleSend}
-                  disabled={isLoading}
-                  className="px-8 py-4 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold transition-all shadow-[0_0_30px_rgba(56,189,248,0.4)] hover:shadow-[0_0_50px_rgba(56,189,248,0.7)] hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Send className="w-5 h-5" />
-                </button>
-              </div>
-            </motion.div>
-
-            {/* Features Panel */}
-            <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 }}
-              className="space-y-6"
-            >
-              {/* Capabilities */}
-              <div className="bg-black/90 backdrop-blur-2xl border-2 border-cyan-800/50 rounded-3xl p-6 shadow-[0_0_60px_rgba(56,189,248,0.2)]">
-                <div className="flex items-center gap-3 mb-6 pb-4 border-b border-cyan-800/50">
-                  <Sparkles className="w-6 h-6 text-cyan-400" />
-                  <h3 className="text-xl font-bold text-white">Capabilities</h3>
-                </div>
-
-                <div className="space-y-3">
-                  {features.map((feature, i) => (
-                    <motion.button
-                      key={i}
-                      whileHover={{ scale: 1.05, x: 5 }}
-                      whileTap={{ scale: 0.95 }}
-                      className={`w-full flex items-center gap-4 p-4 rounded-xl transition-all ${
-                        feature.active
-                          ? 'bg-gradient-to-r from-cyan-600/30 to-blue-600/30 border-2 border-cyan-500'
-                          : 'bg-cyan-950/20 border-2 border-cyan-800/30 hover:border-cyan-700'
-                      }`}
-                    >
-                      <div className={`p-3 rounded-xl ${feature.active ? 'bg-cyan-500' : 'bg-cyan-900/50'}`}>
-                        <feature.icon className="w-5 h-5 text-white" />
-                      </div>
-                      <div className="flex-1 text-left">
-                        <p className="text-white font-bold">{feature.label}</p>
-                        <p className="text-xs text-cyan-500">
-                          {feature.active ? 'Active' : 'Coming Soon'}
-                        </p>
-                      </div>
-                      {feature.active && (
-                        <div className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
-                      )}
-                    </motion.button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Recent Activity */}
-              <div className="bg-black/90 backdrop-blur-2xl border-2 border-cyan-800/50 rounded-3xl p-6 shadow-[0_0_60px_rgba(56,189,248,0.2)]">
-                <div className="flex items-center gap-3 mb-6 pb-4 border-b border-cyan-800/50">
-                  <Activity className="w-6 h-6 text-cyan-400" />
-                  <h3 className="text-xl font-bold text-white">Activity</h3>
-                </div>
-
-                <div className="space-y-3">
-                  {[
-                    { action: 'Code Generation', time: '2 min ago', status: 'success' },
-                    { action: 'Text Analysis', time: '5 min ago', status: 'success' },
-                    { action: 'Image Processing', time: '8 min ago', status: 'pending' },
-                  ].map((activity, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-cyan-950/20 border border-cyan-800/30">
-                      <div>
-                        <p className="text-white text-sm font-semibold">{activity.action}</p>
-                        <p className="text-xs text-cyan-600">{activity.time}</p>
-                      </div>
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                        activity.status === 'success' 
-                          ? 'bg-green-500/20 text-green-400 border border-green-500'
-                          : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500'
-                      }`}>
-                        {activity.status}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
+            <div className="w-full h-1 bg-cyan-900/30 rounded-full overflow-hidden">
+              <div className="w-[12%] h-full bg-cyan-500" />
+            </div>
           </div>
-
         </div>
       </div>
 
-      <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(56, 189, 248, 0.1); border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.5); border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(56, 189, 248, 0.8); }
-      `}</style>
+      {/* CENTRE : Chat */}
+      <div className="flex-1 bg-[#0d0d0d] rounded-xl border-2 border-cyan-500/30 flex flex-col">
+        {/* Header */}
+        <div className="h-14 bg-gradient-to-r from-cyan-900/40 to-blue-900/40 border-b-2 border-cyan-500/30 flex items-center justify-between px-6">
+          <div className="flex items-center gap-3">
+            <Sparkles className="w-5 h-5 text-cyan-400" />
+            <span className="text-cyan-400 font-mono font-bold text-sm">QUANTUM AI CHAT</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse" />
+            <span className="text-cyan-400 text-xs font-mono">CONNECTED</span>
+          </div>
+        </div>
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          {messages.map((msg, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              <div
+                className={`max-w-[70%] p-4 rounded-lg ${
+                  msg.role === 'user'
+                    ? 'bg-cyan-500/20 border border-cyan-500/50'
+                    : 'bg-cyan-900/20 border border-cyan-500/30'
+                }`}
+              >
+                <p className="text-cyan-300 font-mono text-sm">{msg.content}</p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Input */}
+        <div className="p-6 bg-cyan-900/10 border-t border-cyan-500/20">
+          <div className="flex items-center gap-3">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+              placeholder="Ask the AI anything..."
+              className="flex-1 bg-transparent text-cyan-400 font-mono outline-none placeholder-cyan-600/50 text-sm"
+            />
+            <button
+              onClick={handleSend}
+              className="p-3 bg-cyan-500 hover:bg-cyan-400 rounded-lg transition-colors"
+            >
+              <Send className="w-5 h-5 text-black" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* SIDEBAR DROITE : Scripts */}
+      <div className="w-80 bg-[#0d0d0d] rounded-xl border-2 border-cyan-500/30 p-6 overflow-y-auto">
+        <div className="flex items-center gap-3 mb-6">
+          <Code2 className="w-6 h-6 text-cyan-400" />
+          <h2 className="text-cyan-400 font-mono font-bold text-lg">Esoteric Scripts</h2>
+        </div>
+
+        <div className="space-y-3">
+          {scripts.map((script, i) => (
+            <motion.div
+              key={i}
+              whileHover={{ scale: 1.02 }}
+              className="p-4 rounded-lg bg-cyan-900/10 border border-cyan-500/30 hover:border-cyan-500/50 transition-all cursor-pointer"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{script.icon}</span>
+                  <span className="text-cyan-400 font-mono font-bold text-sm">{script.name}</span>
+                </div>
+                <Settings className="w-4 h-4 text-cyan-600" />
+              </div>
+              <p className="text-cyan-600 text-xs font-mono">{script.desc}</p>
+            </motion.div>
+          ))}
+        </div>
+
+        <button className="w-full mt-6 p-3 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500 rounded-lg text-cyan-400 font-mono font-bold text-sm transition-all flex items-center justify-center gap-2">
+          <Zap className="w-4 h-4" />
+          Create New Script
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════
+// COMPOSANT PRINCIPAL : ASSEMBLAGE
+// ═══════════════════════════════════════════════════════════
+
+export default function IADevicePage() {
+  return (
+    <div className="w-full h-screen bg-black flex flex-col">
+      {/* ═══ PARTIE 1 : MAINS MICHEL-ANGE TECH (HAUT) ═══ */}
+      <div className="w-full h-[50vh] relative">
+        <Canvas
+          camera={{ position: [0, 0, 20], fov: 60 }}
+          gl={{ antialias: true, powerPreference: 'high-performance' }}
+          dpr={[1, 2]}
+        >
+          <color attach="background" args={['#000000']} />
+          <fog attach="fog" args={['#000000', 25, 50]} />
+
+          <ambientLight intensity={0.3} />
+          <pointLight position={[-10, 0, 5]} intensity={3} color="#ff8844" />
+          <pointLight position={[10, 0, 5]} intensity={3} color="#00ffff" />
+          <spotLight position={[0, 10, 10]} angle={0.5} intensity={2} color="#ffffff" />
+
+          <Environment preset="studio" />
+          <TechGrid />
+          <LeftHand />
+          <RightHand />
+          <Spark />
+
+          <EffectComposer multisampling={4}>
+            <Bloom intensity={2.5} luminanceThreshold={0.2} luminanceSmoothing={0.9} mipmapBlur />
+            <DepthOfField focusDistance={0.02} focalLength={0.05} bokehScale={3} />
+          </EffectComposer>
+
+          <OrbitControls
+            enableDamping
+            dampingFactor={0.05}
+            maxDistance={30}
+            minDistance={12}
+            enablePan={false}
+            makeDefault
+          />
+        </Canvas>
+
+        {/* Dégradé */}
+        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none" />
+      </div>
+
+      {/* ═══ PARTIE 2 : INTERFACE IA (BAS) ═══ */}
+      <div className="w-full h-[50vh] p-8">
+        <IAInterface />
+      </div>
     </div>
   )
 }

@@ -2,7 +2,7 @@
 'use client'
 
 import React, { useRef, useState, useMemo, useCallback } from 'react'
-import { Canvas, useFrame, extend } from '@react-three/fiber'
+import { Canvas, useFrame } from '@react-three/fiber'
 import { 
   OrbitControls, Line, Text, Float, Sparkles, Billboard, 
   MeshTransmissionMaterial, Trail, Sphere
@@ -335,23 +335,57 @@ const EnergyLinksHD = React.memo(() => {
   )
 })
 
-// --- DATA CONFIGURATION ---
+// --- DATA CONFIGURATION AVEC TOUS LES DEVICES ---
 const NODES = [
+  // COURONNE (Sommet)
   { name: 'KETHER', subtitle: 'CROWN', position: [0, 10, 0], color: '#ffffff', accent: '#a5f3fc', route: '/home', energy: 1.0 },
-  { name: 'TIPHERET', subtitle: 'BEAUTY', position: [0, 0, 0], color: '#fde68a', accent: '#f59e0b', route: '/audiovisuel', energy: 0.9 },
-  { name: 'YESOD', subtitle: 'FOUNDATION', position: [0, -7, 0], color: '#d8b4fe', accent: '#9333ea', route: '/communautes', energy: 0.7 },
+  
+  // CENTRE (Position centrale - CHARTS)
+  { name: 'CHARTS', subtitle: 'TRADING VIEW', position: [0, 0, 0], color: '#10b981', accent: '#00ff88', route: '/charts', energy: 0.95 },
+  
+  // YESOD → GNOSIS (Fondation de la connaissance)
+  { name: 'GNOSIS', subtitle: 'KNOWLEDGE', position: [0, -7, 0], color: '#d4a574', accent: '#92400e', route: '/gnosis', energy: 1.0 },
+  
+  // MALKUTH (Royaume - base)
   { name: 'MALKUTH', subtitle: 'KINGDOM', position: [0, -12, 0], color: '#a8a29e', accent: '#57534e', route: '/communautes', energy: 0.5 },
+  
+  // PILIER DROIT (Intelligence + Sagesse)
   { name: 'CHOKHMAH', subtitle: 'WISDOM', position: [6, 7, 0], color: '#e2e8f0', accent: '#38bdf8', route: '/ia', energy: 0.95 },
-  { name: 'CHESED', subtitle: 'MERCY', position: [6, 1, 0], color: '#bfdbfe', accent: '#3b82f6', route: '/terminal', energy: 0.85 },
+  { name: 'CHESED', subtitle: 'MERCY', position: [6, 1, 0], color: '#bfdbfe', accent: '#3b82f6', route: '/audiovisuel', energy: 0.85 },
   { name: 'NETZACH', subtitle: 'VICTORY', position: [5, -5, 0], color: '#86efac', accent: '#10b981', route: '/terminal', energy: 0.75 },
+  
+  // PILIER GAUCHE (Force + Justice)
   { name: 'BINAH', subtitle: 'INTELLECT', position: [-6, 7, 0], color: '#cbd5e1', accent: '#94a3b8', route: '/politique', energy: 0.9 },
   { name: 'GEVURAH', subtitle: 'STRENGTH', position: [-6, 1, 0], color: '#fca5a5', accent: '#ef4444', route: '/terminal', energy: 0.8 },
   { name: 'HOD', subtitle: 'GLORY', position: [-5, -5, 0], color: '#fdba74', accent: '#f97316', route: '/politique', energy: 0.7 },
 ]
 
+// Connexions entre les sephiroth (Chemins de l'Arbre de Vie)
 const LINKS = [
-  [0, 4], [4, 7], [7, 5], [5, 8], [8, 1], [1, 6], [6, 9], [9, 2], [2, 3],
-  [0, 7], [0, 1], [4, 1], [7, 1], [5, 1], [8, 1], [6, 2], [9, 2], [5, 6], [8, 9]
+  // Axe central
+  [0, 1], // KETHER → CHARTS
+  [1, 2], // CHARTS → GNOSIS
+  [2, 3], // GNOSIS → MALKUTH
+  
+  // Pilier droit
+  [0, 4], // KETHER → CHOKHMAH
+  [4, 5], // CHOKHMAH → CHESED
+  [5, 6], // CHESED → NETZACH
+  [6, 2], // NETZACH → GNOSIS
+  
+  // Pilier gauche
+  [0, 7], // KETHER → BINAH
+  [7, 8], // BINAH → GEVURAH
+  [8, 9], // GEVURAH → HOD
+  [9, 2], // HOD → GNOSIS
+  
+  // Connexions transversales
+  [4, 1], // CHOKHMAH → CHARTS
+  [7, 1], // BINAH → CHARTS
+  [5, 1], // CHESED → CHARTS
+  [8, 1], // GEVURAH → CHARTS
+  [5, 6], // CHESED → NETZACH
+  [8, 9], // GEVURAH → HOD
 ]
 
 // --- COMPOSANT PRINCIPAL AMD RADEON 780M OPTIMISÉ ---
